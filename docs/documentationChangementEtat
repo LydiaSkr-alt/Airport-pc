@@ -1,0 +1,49 @@
+
+/*
+═══════════════════════════════════════════════════════════════════════════
+                    DIAGRAMME DE TRANSITION D'ÉTAT - PISTE
+═══════════════════════════════════════════════════════════════════════════
+
+┌──────────┐    utilisation    ┌──────────┐
+│  LIBRE   │ ────────────────> │ OCCUPEE  │
+└────┬─────┘                   └────┬─────┘
+     │                              │
+     │ maintenance                  │ libération
+     │ programmée                   │
+     ↓                              ↓
+┌──────────────┐     fin      ┌─────────┐
+│      EN      │ <────────────┤ FERMEE  │
+│ MAINTENANCE  │              └────┬────┘
+└──────┬───────┘                   │
+       │                            │
+       │ problème                   │ décision
+       │ grave                      │ définitive
+       ↓                            ↓
+┌──────────────┐  réhabilitation
+│     HORS     │ <───────────────── (rare)
+│   SERVICE    │
+└──────────────┘
+
+États terminaux : HORS_SERVICE (avec possibilité rare de réhabilitation)
+
+═══════════════════════════════════════════════════════════════════════════
+*/
+
+
+
+
+
+/*
+Diagramme des transitions d'état
+```
+PROGRAMME → ENREGISTREMENT → EMBARQUEMENT → PRET_DECOLLAGE → DECOLLE → EN_VOL → EN_APPROCHE → ATTERRI → ARRIVE
+    ↓              ↓               ↓               ↓                        ↓        ↓
+  RETARDE      RETARDE         RETARDE         RETARDE                DETOURNE  DETOURNE
+    ↓              ↓               ↓               ↓                        ↓        ↓
+  ANNULE       ANNULE          ANNULE          ANNULE                  ATTERRI  ATTERRI
+                                                                           ↓        ↓
+                                                                        ARRIVE   ARRIVE
+
+États terminaux : ARRIVE, ANNULE
+
+*/

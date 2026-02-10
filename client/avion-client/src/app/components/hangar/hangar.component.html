@@ -1,0 +1,179 @@
+<div class="container">
+  <h2>Gestion des Hangars</h2>
+  <p class="section-subtitle">Gérez les hangars et l'association avec les avions</p>
+
+  @if (errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Formulaire -->
+  <div class="form-section">
+    <div class="form-header">
+      <h3 class="form-title">{{ editing ? 'Modifier un hangar' : 'Créer un hangar' }}</h3>
+      @if (editing) {
+        <span class="edit-badge">
+          ✏️ Modification: {{ newHangar.identifiant }}
+        </span>
+      }
+    </div>
+
+    <form (ngSubmit)="saveHangar()">
+      <div class="form-group">
+        <label>Identifiant *</label>
+        <input type="text" [(ngModel)]="newHangar.identifiant" name="identifiant"
+               placeholder="Ex: HANGAR-A1" required [readonly]="editing">
+      </div>
+
+      <div class="form-group">
+        <label>Capacité *</label>
+        <input type="number" [(ngModel)]="newHangar.capacite" name="capacite"
+               placeholder="Ex: 5" required>
+      </div>
+
+      @if(editing){
+      <div class="form-group">
+        <label>État *</label>
+        <select [(ngModel)]="newHangar.etat" name="etat" required>
+          <option value="" disabled selected>-- Choisir un état --</option>
+          @for (etat of (editing ? etatOptionsEdition : etatOptions); track $index) {
+            <option [value]="etat">{{ etat }}</option>
+          }
+        </select>
+      </div>
+      }
+      <div class="form-group">
+        <label>Code IATA Aéroport (optionnel)</label>
+        <select [(ngModel)]="newHangar.aeroportCodeIATA" name="aeroportCodeIATA" class="form-control">
+          <option [ngValue]="null">-- Aucun aéroport --</option>
+          <option *ngFor="let aeroport of aeroports" [ngValue]="aeroport.codeIATA">
+            {{ aeroport.codeIATA }} - {{ aeroport.nom }} ({{ aeroport.ville }}, {{ aeroport.pays }})
+          </option>
+        </select>
+
+        <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+          Sélectionnez l'aéroport auquel assigner cette piste
+        </small>
+      </div>
+      <div class="btn-group">
+        <button type="submit" class="btn-primary">
+          {{ editing ? '💾 Mettre à jour' : '➕ Ajouter' }}
+        </button>
+        <button *ngIf="editing" type="button" (click)="cancel()" class="btn-secondary">
+          ✖️ Annuler
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cards des hangars -->
+  @if (hangars.length === 0) {
+    <div class="empty-state">
+      <div class="empty-state-icon">🏢</div>
+      <div class="empty-state-text">Aucun hangar enregistré</div>
+      <p class="empty-state-subtext">Commencez par créer votre premier hangar</p>
+    </div>
+  } @else {
+    <div class="card-grid">
+      @for (hangar of hangars; track hangar.identifiant) {
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏢 {{ hangar.identifiant }}</div>
+            <span class="status-badge"
+                  [class.status-libre]="hangar.etat === 'Disponible' || hangar.etat === 'Vide'"
+                  [class.status-occupee]="hangar.etat === 'Rempli'"
+                  [class.status-maintenance]="hangar.etat === 'EnMaintenance'">
+              {{ hangar.etat }}
+            </span>
+          </div>
+
+          <div class="card-body">
+            <p><strong>Capacité:</strong> {{ hangar.avions.length }} / {{ hangar.capacite }} avions</p>
+            <p><Strong>Aéroport: </Strong>{{ hangar.aeroportCodeIATA}} </p>
+            @if (hangar.avions.length > 0) {
+              <div style="margin-top: 1rem;">
+                <strong style="display: block; margin-bottom: 0.5rem;">Avions associés:</strong>
+                <ul class="item-list">
+                  @for (avion of hangar.avions; track avion.immatriculation) {
+                    <li>
+                      <div class="item-info">
+                        <div class="item-title">✈️ {{ avion.immatriculation }}</div>
+                        <div class="item-details">
+                          👥 {{ avion.capacitePassager }} passagers ·
+                          🚀 {{ avion.vitesseCroisiere }} km/h
+                        </div>
+                      </div>
+                      <button (click)="dissocierAvion(hangar.identifiant, avion.immatriculation)"
+                              class="btn-danger btn-sm">
+                        ✖️
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </div>
+            } @else {
+              <p style="color: var(--secondary); font-style: italic; margin-top: 1rem;">
+                Aucun avion dans ce hangar
+              </p>
+            }
+          </div>
+
+          <div class="card-footer">
+            <button (click)="editHangar(hangar)" class="btn-warning btn-sm">
+              ✏️ Modifier
+            </button>
+            <button (click)="deleteHangar(hangar.identifiant)" class="btn-danger btn-sm">
+              🗑️ Supprimer
+            </button>
+            <button class="btn-success btn-sm"
+                    [disabled]="hangar.avions.length >= hangar.capacite"
+                    [attr.data-tooltip]="hangar.avions.length >= hangar.capacite
+                    ? 'Capacité maximale atteinte — impossible d\'associer un avion'
+                    : null"
+                    (click)="openAssocierAvion(hangar.identifiant)">
+              ➕ Avion
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal pour associer un avion -->
+  @if (selectedHangarForAssoc) {
+    <div class="modal-overlay" (click)="selectedHangarForAssoc = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Associer un avion au hangar {{ selectedHangarForAssoc }}</h3>
+          <button class="close-btn" (click)="selectedHangarForAssoc = null">✖️</button>
+        </div>
+
+        @if (avionsDisponibles.length > 0) {
+          <ul class="item-list">
+            @for (avion of avionsDisponibles; track avion.immatriculation) {
+              <li>
+                <div class="item-info">
+                  <div class="item-title">✈️ {{ avion.immatriculation }}</div>
+                  <div class="item-details">
+                    👥 {{ avion.capacitePassager }} passagers ·
+                    🚀 {{ avion.vitesseCroisiere }} km/h ·
+                    {{ avion.etatMaintenance }}
+                  </div>
+                </div>
+                <button (click)="associerAvionSelectionne(avion.immatriculation)"
+                        class="btn-success btn-sm">
+                  ➕ Associer
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">
+            <p>Aucun avion disponible pour l'association</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

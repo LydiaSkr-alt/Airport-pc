@@ -1,0 +1,514 @@
+<div class="container">
+  <h2>🛫 Tableau de Bord Trafic Aérien</h2>
+  <p class="section-subtitle">Coordination et suivi du trafic en temps réel</p>
+
+  @if (errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Sélection de l'aéroport -->
+  <div class="form-section">
+    <div class="form-group">
+      <label>Code IATA de l'aéroport</label>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <select [(ngModel)]="codeIATA" name="codeIATA" class="form-control" style="max-width: 320px;">
+          <option [ngValue]="null">-- Sélectionner un aéroport --</option>
+          <option *ngFor="let aeroport of aeroports" [ngValue]="aeroport.codeIATA">
+            {{ aeroport.codeIATA }} - {{ aeroport.nom }} ({{ aeroport.ville }}, {{ aeroport.pays }})
+          </option>
+        </select>
+        <button (click)="changeAeroport()" class="btn-primary">
+          🔍 Charger
+        </button>
+        <button (click)="refresh()" class="btn-secondary">
+          🔄 Rafraîchir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="empty-state">
+      <div class="empty-state-icon">⏳</div>
+      <div class="empty-state-text">Chargement en cours...</div>
+    </div>
+  }
+
+  @if (dashboard && !loading) {
+    <!-- Navigation entre les vues -->
+    <div class="nav-tabs" style="margin-bottom: 2rem;">
+      <button class="nav-tab"
+              [class.active]="activeView === 'dashboard'"
+              (click)="changeView('dashboard')">
+        📊 Vue d'ensemble
+      </button>
+      <button class="nav-tab"
+              [class.active]="activeView === 'departs'"
+              (click)="changeView('departs')">
+        🛫 Départs ({{ dashboard.volsDepart.length }})
+      </button>
+      <button class="nav-tab"
+              [class.active]="activeView === 'arrivees'"
+              (click)="changeView('arrivees')">
+        🛬 Arrivées ({{ dashboard.volsArrivee.length }})
+      </button>
+      <button class="nav-tab"
+              [class.active]="activeView === 'pistes'"
+              (click)="changeView('pistes')">
+        🛤️ Pistes ({{ dashboard.pistes.length }})
+      </button>
+    </div>
+
+    <!-- Vue Dashboard -->
+    @if (activeView === 'dashboard') {
+      <div>
+        <h3 style="margin-bottom: 1rem;">
+          📍 Aéroport {{ dashboard.aeroportCodeIATA }}
+        </h3>
+        <p style="color: var(--secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+          Dernière mise à jour: {{ dashboard.timestamp | date:'medium' }}
+        </p>
+
+        <!-- Statistiques -->
+        <div class="stats-grid">
+          <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="stat-value">{{ dashboard.statistiques.totalVolsDepart }}</div>
+            <div class="stat-label">🛫 Départs</div>
+          </div>
+
+          <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stat-value">{{ dashboard.statistiques.totalVolsArrivee }}</div>
+            <div class="stat-label">🛬 Arrivées</div>
+          </div>
+
+          <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-value">{{ dashboard.statistiques.volsEnCours }}</div>
+            <div class="stat-label">✈️ En cours</div>
+          </div>
+
+          @if (dashboard.statistiques.volsRetardes > 0) {
+            <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+              <div class="stat-value">{{ dashboard.statistiques.volsRetardes }}</div>
+              <div class="stat-label">⚠️ Retardés</div>
+            </div>
+          }
+
+          <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stat-value">{{ dashboard.statistiques.pistesDisponibles }}</div>
+            <div class="stat-label">✅ Pistes libres</div>
+          </div>
+
+          <div class="stat-card" style="background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 100%);">
+            <div class="stat-value">{{ dashboard.statistiques.pistesOccupees }}</div>
+            <div class="stat-label">🔴 Pistes occupées</div>
+          </div>
+        </div>
+
+        <!-- Prochains départs -->
+        @if (dashboard.volsDepart && dashboard.volsDepart.length > 0) {
+          <div class="table-container" style="margin-top: 2rem;">
+            <div class="table-header">
+              <div class="table-title">🛫 Prochains Départs</div>
+            </div>
+
+            <table>
+              <thead>
+              <tr>
+                <th>Vol</th>
+                <th>Destination</th>
+                <th>Départ prévu</th>
+                <th>Statut</th>
+                <th>Avion</th>
+                <th>Piste</th>
+              </tr>
+              </thead>
+              <tbody>
+                @for (vol of dashboard.volsDepart.slice(0, 5); track vol.numeroVol) {
+                  <tr>
+                    <td><strong>{{ vol.numeroVol }}</strong></td>
+                    <td>{{ vol.destination }}</td>
+                    <td>{{ vol.heureDepart | date:'short' }}</td>
+                    <td>
+                      <span class="status-badge"
+                            [class.status-libre]="vol.statut === 'PROGRAMME'"
+                            [class.status-occupee]="vol.statut === 'EN_VOL' || vol.statut === 'ENREGISTREMENT' || vol.statut === 'DECOLLE'"
+                            [class.status-danger]="vol.statut === 'RETARDE' || vol.statut === 'ANNULE'">
+                        {{ vol.statut }}
+                      </span>
+                    </td>
+                    <td>{{ vol.avionImmatriculation || '-' }}</td>
+                    <td>{{ vol.pisteAssignee || '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <!-- Prochaines arrivées -->
+        @if (dashboard.volsArrivee && dashboard.volsArrivee.length > 0) {
+          <div class="table-container" style="margin-top: 2rem;">
+            <div class="table-header">
+              <div class="table-title">🛬 Prochaines Arrivées</div>
+            </div>
+
+            <table>
+              <thead>
+              <tr>
+                <th>Vol</th>
+                <th>Origine</th>
+                <th>Arrivée prévue</th>
+                <th>Statut</th>
+                <th>Avion</th>
+                <th>Piste</th>
+              </tr>
+              </thead>
+              <tbody>
+                @for (vol of dashboard.volsArrivee.slice(0, 5); track vol.numeroVol) {
+                  <tr>
+                    <td><strong>{{ vol.numeroVol }}</strong></td>
+                    <td>{{ vol.origine }}</td>
+                    <td>{{ vol.heureArrivee | date:'short' }}</td>
+                    <td>
+                      <span class="status-badge"
+                            [class.status-libre]="vol.statut === 'PROGRAMME'"
+                            [class.status-occupee]="vol.statut === 'EN_VOL' || vol.statut === 'EN_APPROCHE'"
+                            [class.status-maintenance]="vol.statut === 'ATTERRI'"
+                            [class.status-danger]="vol.statut === 'RETARDE' || vol.statut === 'ANNULE'">
+                        {{ vol.statut }}
+                      </span>
+                    </td>
+                    <td>{{ vol.avionImmatriculation || '-' }}</td>
+                    <td>{{ vol.pisteAssignee || '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <!-- État des pistes -->
+        @if (dashboard.pistes && dashboard.pistes.length > 0) {
+          <div class="table-container" style="margin-top: 2rem;">
+            <div class="table-header">
+              <div class="table-title">🛤️ État des Pistes</div>
+            </div>
+
+            <div class="card-grid">
+              @for (piste of dashboard.pistes; track piste.identifiant) {
+                <div class="card">
+                  <div class="card-header">
+                    <div class="card-title">🛤️ Piste {{ piste.identifiant }}</div>
+                    <span class="status-badge"
+                          [class.status-libre]="piste.etat === 'LIBRE'"
+                          [class.status-occupee]="piste.etat === 'OCCUPEE'"
+                          [class.status-maintenance]="piste.etat === 'MAINTENANCE'"
+                          [class.status-danger]="piste.etat === 'FERMEE'">
+                      {{ piste.etat }}
+                    </span>
+                  </div>
+
+                  <div class="card-body">
+                    @if (piste.operationEnCours) {
+                      <div style="margin-bottom: 0.75rem;">
+                        <strong style="color: var(--warning);">🔴 Opération en cours:</strong>
+                        <div style="margin-top: 0.25rem; font-size: 0.9rem;">
+                          Vol {{ piste.operationEnCours.numeroVol }} -
+                          {{ piste.operationEnCours.typeOperation }}
+                          <br>
+                          <span style="color: var(--secondary);">
+                            Depuis {{ piste.operationEnCours.heureDebut | date:'short' }}
+                          </span>
+                        </div>
+                      </div>
+                    }
+
+                    @if (piste.prochainesOperations && piste.prochainesOperations.length > 0) {
+                      <div>
+                        <strong>📅 Prochaines ({{ piste.prochainesOperations.length }}):</strong>
+                        <ul style="margin-top: 0.5rem; padding-left: 1.25rem; font-size: 0.875rem;">
+                          @for (op of piste.prochainesOperations.slice(0, 3); track op.numeroVol) {
+                            <li style="margin-bottom: 0.25rem;">
+                              {{ op.numeroVol }} - {{ op.typeOperation }}
+                              ({{ op.heurePrevue | date:'short' }})
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Vue Départs -->
+    @if (activeView === 'departs') {
+      <div>
+        <div class="form-section">
+          <div class="form-group">
+            <label>Filtrer par statut</label>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <select [(ngModel)]="filtreStatutDepart" style="max-width: 250px;">
+                <option [ngValue]="null">-- Tous les statuts --</option>
+                @for (statut of statutOptions; track $index) {
+                  <option [value]="statut">{{ statut }}</option>
+                }
+              </select>
+              <button (click)="resetFiltres()" class="btn-secondary">Réinitialiser</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">
+            <div class="table-title">🛫 Vols au Départ ({{ volsDepartFiltres.length }})</div>
+          </div>
+
+          @if (volsDepartFiltres.length === 0) {
+            <div class="empty-state">
+              <div class="empty-state-icon">✈️</div>
+              <div class="empty-state-text">Aucun vol au départ</div>
+            </div>
+          } @else {
+            <table>
+              <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Origine</th>
+                <th>Destination</th>
+                <th>Départ prévu</th>
+                <th>Arrivée prévue</th>
+                <th>Statut</th>
+                <th>Avion</th>
+                <th>Piste</th>
+              </tr>
+              </thead>
+              <tbody>
+                @for (vol of volsDepartFiltres; track vol.numeroVol) {
+                  <tr>
+                    <td><strong>{{ vol.numeroVol }}</strong></td>
+                    <td>{{ vol.origine }}</td>
+                    <td>{{ vol.destination }}</td>
+                    <td>{{ vol.heureDepart | date:'short' }}</td>
+                    <td>{{ vol.heureArrivee | date:'short' }}</td>
+                    <td>
+                      <span class="status-badge"
+                            [class.status-libre]="vol.statut === 'PROGRAMME'"
+                            [class.status-occupee]="vol.statut === 'EN_VOL' || vol.statut === 'ENREGISTREMENT' || vol.statut === 'DECOLLE'"
+                            [class.status-danger]="vol.statut === 'RETARDE' || vol.statut === 'ANNULE'">
+                        {{ vol.statut }}
+                      </span>
+                    </td>
+                    <td>{{ vol.avionImmatriculation || '-' }}</td>
+                    <td>{{ vol.pisteAssignee || '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Vue Arrivées -->
+    @if (activeView === 'arrivees') {
+      <div>
+        <div class="form-section">
+          <div class="form-group">
+            <label>Filtrer par statut</label>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <select [(ngModel)]="filtreStatutArrivee" style="max-width: 250px;">
+                <option [ngValue]="null">-- Tous les statuts --</option>
+                @for (statut of statutOptions; track $index) {
+                  <option [value]="statut">{{ statut }}</option>
+                }
+              </select>
+              <button (click)="resetFiltres()" class="btn-secondary">Réinitialiser</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <div class="table-header">
+            <div class="table-title">🛬 Vols à l'Arrivée ({{ volsArriveeFiltres.length }})</div>
+          </div>
+
+          @if (volsArriveeFiltres.length === 0) {
+            <div class="empty-state">
+              <div class="empty-state-icon">✈️</div>
+              <div class="empty-state-text">Aucun vol à l'arrivée</div>
+            </div>
+          } @else {
+            <table>
+              <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Origine</th>
+                <th>Destination</th>
+                <th>Départ</th>
+                <th>Arrivée prévue</th>
+                <th>Statut</th>
+                <th>Avion</th>
+                <th>Piste</th>
+              </tr>
+              </thead>
+              <tbody>
+                @for (vol of volsArriveeFiltres; track vol.numeroVol) {
+                  <tr>
+                    <td><strong>{{ vol.numeroVol }}</strong></td>
+                    <td>{{ vol.origine }}</td>
+                    <td>{{ vol.destination }}</td>
+                    <td>{{ vol.heureDepart | date:'short' }}</td>
+                    <td>{{ vol.heureArrivee | date:'short' }}</td>
+                    <td>
+                      <span class="status-badge"
+                            [class.status-libre]="vol.statut === 'PROGRAMME'"
+                            [class.status-occupee]="vol.statut === 'EN_VOL' || vol.statut === 'EN_APPROCHE'"
+                            [class.status-maintenance]="vol.statut === 'ATTERRI'"
+                            [class.status-danger]="vol.statut === 'RETARDE' || vol.statut === 'ANNULE'">
+                        {{ vol.statut }}
+                      </span>
+                    </td>
+                    <td>{{ vol.avionImmatriculation || '-' }}</td>
+                    <td>{{ vol.pisteAssignee || '-' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Vue Planning des Pistes -->
+    @if (activeView === 'pistes') {
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">🛤️ Planning des Pistes ({{ dashboard.pistes.length }})</div>
+        </div>
+
+        @if (dashboard.pistes.length === 0) {
+          <div class="empty-state">
+            <div class="empty-state-icon">🛤️</div>
+            <div class="empty-state-text">Aucune piste disponible</div>
+          </div>
+        } @else {
+          <div class="card-grid">
+            @for (piste of dashboard.pistes; track piste.identifiant) {
+              <div class="card" [style.border-color]="pisteSelectionnee?.identifiant === piste.identifiant ? 'var(--primary)' : ''">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">🛤️ Piste {{ piste.identifiant }}</div>
+                  </div>
+                  <span class="status-badge"
+                        [class.status-libre]="piste.etat === 'LIBRE'"
+                        [class.status-occupee]="piste.etat === 'OCCUPEE'"
+                        [class.status-maintenance]="piste.etat === 'MAINTENANCE'"
+                        [class.status-danger]="piste.etat === 'FERMEE'">
+                    {{ piste.etat }}
+                  </span>
+                </div>
+
+                <div class="card-body">
+                  <!-- Opération en cours -->
+                  @if (piste.operationEnCours) {
+                    <div style="background: #fff7ed; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid var(--warning);">
+                      <strong style="color: var(--warning);">🔴 En cours:</strong>
+                      <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                        <div><strong>Vol:</strong> {{ piste.operationEnCours.numeroVol }}</div>
+                        <div><strong>Type:</strong> {{ piste.operationEnCours.typeOperation }}</div>
+                        <div><strong>Début:</strong> {{ piste.operationEnCours.heureDebut | date:'short' }}</div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Prochaines opérations -->
+                  @if (piste.prochainesOperations && piste.prochainesOperations.length > 0) {
+                    <div style="margin-bottom: 1rem;">
+                      <strong>📅 Prochaines opérations ({{ piste.prochainesOperations.length }}):</strong>
+                      <table style="width: 100%; margin-top: 0.5rem; font-size: 0.875rem;">
+                        <thead>
+                        <tr>
+                          <th style="text-align: left; padding: 0.25rem;">Vol</th>
+                          <th style="text-align: left; padding: 0.25rem;">Type</th>
+                          <th style="text-align: left; padding: 0.25rem;">Heure</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                          @for (op of piste.prochainesOperations; track op.numeroVol) {
+                            <tr>
+                              <td style="padding: 0.25rem;">{{ op.numeroVol }}</td>
+                              <td style="padding: 0.25rem;">
+                                <span class="status-badge status-maintenance" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                  {{ op.typeOperation }}
+                                </span>
+                              </td>
+                              <td style="padding: 0.25rem;">{{ op.heurePrevue | date:'short' }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+
+                  <!-- Historique récent -->
+                  @if (piste.historiqueRecent && piste.historiqueRecent.length > 0) {
+                    <div>
+                      <button (click)="voirDetailsPiste(piste)"
+                              class="btn-secondary btn-sm"
+                              style="width: 100%;">
+                        {{ pisteSelectionnee?.identifiant === piste.identifiant ? '👁️ Masquer' : '📜 Voir' }}
+                        l'historique ({{ piste.historiqueRecent.length }})
+                      </button>
+
+                      @if (pisteSelectionnee?.identifiant === piste.identifiant) {
+                        <table style="width: 100%; margin-top: 1rem; font-size: 0.875rem;">
+                          <thead>
+                          <tr>
+                            <th style="text-align: left; padding: 0.25rem;">Vol</th>
+                            <th style="text-align: left; padding: 0.25rem;">Type</th>
+                            <th style="text-align: left; padding: 0.25rem;">Début</th>
+                            <th style="text-align: left; padding: 0.25rem;">Fin</th>
+                            <th style="text-align: left; padding: 0.25rem;">Durée</th>
+                          </tr>
+                          </thead>
+                          <tbody>
+                            @for (hist of piste.historiqueRecent; track $index) {
+                              <tr>
+                                <td style="padding: 0.25rem;">{{ hist.numeroVol }}</td>
+                                <td style="padding: 0.25rem;">
+                                  <span class="status-badge status-libre" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                                    {{ hist.typeOperation }}
+                                  </span>
+                                </td>
+                                <td style="padding: 0.25rem;">{{ hist.heureDebut | date:'short' }}</td>
+                                <td style="padding: 0.25rem;">{{ hist.heureFin ? (hist.heureFin | date:'short') : '-' }}</td>
+                                <td style="padding: 0.25rem;">{{ formatDuree(hist.dureeSecondes) }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      }
+                    </div>
+                  }
+
+                  @if (!piste.operationEnCours && (!piste.prochainesOperations || piste.prochainesOperations.length === 0)) {
+                    <p style="color: var(--secondary); font-style: italic; text-align: center; padding: 1rem;">
+                      Aucune opération planifiée
+                    </p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

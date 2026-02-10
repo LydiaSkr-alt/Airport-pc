@@ -1,0 +1,164 @@
+<div class="container">
+  <h2>Gestion des Avions</h2>
+  <p class="section-subtitle">Gérez votre flotte d'avions et suivez leur état de maintenance</p>
+
+  @if (errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Formulaire -->
+  <div class="form-section">
+    <div class="form-header">
+      <h3 class="form-title">{{ editing ? 'Modifier un avion' : 'Ajouter un avion' }}</h3>
+      @if (editing) {
+        <span class="edit-badge">
+          ✏️ Modification: {{ newAvion.immatriculation }}
+        </span>
+      }
+    </div>
+
+    <form (ngSubmit)="saveAvion()">
+      <div class="form-group">
+        <label>Immatriculation *</label>
+        <input [(ngModel)]="newAvion.immatriculation" name="immatriculation"
+               placeholder="Ex: BOEING-777" required [readonly]="editing">
+      </div>
+
+      <div class="form-group">
+        <label>Capacité Passagers *</label>
+        <input [(ngModel)]="newAvion.capacitePassager" name="capacitePassager"
+               type="number" placeholder="Ex: 215" required>
+      </div>
+
+      <div class="form-group">
+        <label>Largeur (m)</label>
+        <input [(ngModel)]="newAvion.largeur" name="largeur"
+               type="number" step="0.1" placeholder="Ex: 35.8">
+      </div>
+
+      <div class="form-group">
+        <label>Longueur (m)</label>
+        <input [(ngModel)]="newAvion.longueur" name="longueur"
+               type="number" step="0.1" placeholder="Ex: 39.5">
+      </div>
+
+      <div class="form-group">
+        <label>Hauteur (m)</label>
+        <input [(ngModel)]="newAvion.hauteur" name="hauteur"
+               type="number" step="0.1" placeholder="Ex: 12.6">
+      </div>
+
+      <div class="form-group">
+        <label>Volume Bagages (m³)</label>
+        <input [(ngModel)]="newAvion.volumeBagage" name="volumeBagage"
+               type="number" placeholder="Ex: 120">
+      </div>
+
+      <div class="form-group">
+        <label>Capacité Carburant (L)</label>
+        <input [(ngModel)]="newAvion.capaciteCarburant" name="capaciteCarburant"
+               type="number" placeholder="Ex: 20000">
+      </div>
+
+      <div class="form-group">
+        <label>Autonomie (km)</label>
+        <input [(ngModel)]="newAvion.autonomie" name="autonomie"
+               type="number" placeholder="Ex: 5000">
+      </div>
+
+      <div class="form-group">
+        <label>Vitesse Croisière (km/h)</label>
+        <input [(ngModel)]="newAvion.vitesseCroisiere" name="vitesseCroisiere"
+               type="number" placeholder="Ex: 900">
+      </div>
+
+      @if(editing){
+      <div class="form-group">
+        <label>État Maintenance *</label>
+        <select [(ngModel)]="newAvion.etatMaintenance" name="etatMaintenance" required>
+          <option value="" disabled selected>-- Choisir un état --</option>
+          @for (etat of etatOptions; track $index) {
+            <option [value]="etat">{{ etat }}</option>
+          }
+        </select>
+      </div>
+      }
+
+      <div class="btn-group">
+        <button type="submit" class="btn-primary">
+          {{ editing ? '💾 Enregistrer' : '➕ Ajouter' }}
+        </button>
+        @if (editing) {
+          <button type="button" (click)="cancel()" class="btn-secondary">
+            ✖️ Annuler
+          </button>
+        }
+      </div>
+    </form>
+  </div>
+
+  <!-- Tableau des avions -->
+  <div class="table-container">
+    <div class="table-header">
+      <div class="table-title">📋 Liste des Avions ({{ avions.length }})</div>
+    </div>
+
+    @if (avions.length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">✈️</div>
+        <div class="empty-state-text">Aucun avion enregistré</div>
+        <p class="empty-state-subtext">Commencez par ajouter votre premier avion</p>
+      </div>
+    } @else {
+      <table>
+        <thead>
+        <tr>
+          <th>Immatriculation</th>
+          <th>Passagers</th>
+          <th>Dimensions (L×l×h)</th>
+          <th>Bagages</th>
+          <th>Carburant</th>
+          <th>Autonomie</th>
+          <th>Vitesse</th>
+          <th>État</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (avion of avions; track avion.immatriculation) {
+            <tr>
+              <td><strong>{{ avion.immatriculation }}</strong></td>
+              <td>👥 {{ avion.capacitePassager }}</td>
+              <td>{{ avion.longueur }}m × {{ avion.largeur }}m × {{ avion.hauteur }}m</td>
+              <td>{{ avion.volumeBagage }} m³</td>
+              <td>{{ avion.capaciteCarburant }} L</td>
+              <td>{{ avion.autonomie }} km</td>
+              <td>{{ avion.vitesseCroisiere }} km/h</td>
+              <td>
+                <span class="status-badge"
+                      [class.status-libre]="avion.etatMaintenance === 'OK'"
+                      [class.status-maintenance]="avion.etatMaintenance === 'EN_REVISION'"
+                      [class.status-danger]="avion.etatMaintenance === 'EN_PANNE'"
+                      [class.status-occupee]="avion.etatMaintenance === 'EN_SERVICE'">
+                  {{ avion.etatMaintenance }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button (click)="editAvion(avion)" class="btn-warning btn-sm">
+                    ✏️ Modifier
+                  </button>
+                  <button (click)="deleteAvion(avion.immatriculation)" class="btn-danger btn-sm">
+                    🗑️ Supprimer
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>

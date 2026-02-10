@@ -1,0 +1,50 @@
+
+services:
+  db:
+    image: postgres:15
+    container_name: airport-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: exemple
+      POSTGRES_DB: airport
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - airport-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: airport-app
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/airport
+      DB_USERNAME: postgres
+      DB_PASSWORD: exemple
+      DB_JPA_DDL_AUTO: update
+      DB_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      AEROPORT_CODE_IATA: BJA
+      AEROPORT_EXTERNE_URL: http://129.88.210.138:8080/api/vols
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - airport-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  airport-network:
+    driver: bridge

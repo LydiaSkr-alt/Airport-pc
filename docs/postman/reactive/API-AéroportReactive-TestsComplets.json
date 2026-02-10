@@ -1,0 +1,1935 @@
+{
+  "info": {
+    "name": "API Aéroport Reactive - Tests Complets",
+    "description": "Collection exhaustive couvrant tous les endpoints, transitions d'état et règles métier",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api/reactive" },
+    { "key": "aeroportLocal", "value": "CDG" },
+    { "key": "aeroportPartenaire", "value": "LYS" },
+    { "key": "avion1", "value": "F-GKXA" },
+    { "key": "avion2", "value": "F-HBNL" },
+    { "key": "avion3", "value": "F-GCDE" },
+    { "key": "piste1", "value": "09L" },
+    { "key": "piste2", "value": "27R" },
+    { "key": "piste3", "value": "09R" },
+    { "key": "hangar1", "value": "H1" },
+    { "key": "hangar2", "value": "H2" },
+    { "key": "vol1", "value": "AF1234" },
+    { "key": "vol2", "value": "AF5678" },
+    { "key": "volComposite", "value": "AF-COMP" },
+    { "key": "passager1", "value": "AB123456" },
+    { "key": "passager2", "value": "CD789012" },
+    { "key": "passager3", "value": "EF345678" },
+    { "key": "siege1", "value": "12A" },
+    { "key": "siege2", "value": "12B" },
+    { "key": "siege3", "value": "1A" }
+  ],
+  "item": [
+    {
+      "name": "0. Setup Initial",
+      "item": [
+        {
+          "name": "0.1 Aéroports",
+          "item": [
+            {
+              "name": "Créer aéroport local (CDG)",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/aeroports",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codeIATA\": \"{{aeroportLocal}}\",\n  \"nom\": \"Paris Charles de Gaulle\",\n  \"ville\": \"Paris\",\n  \"pays\": \"France\",\n  \"estLocal\": true\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Est local', () => pm.expect(pm.response.json().estLocal).to.be.true);"
+              ]}}]
+            },
+            {
+              "name": "Créer aéroport partenaire (LYS)",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/aeroports",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codeIATA\": \"{{aeroportPartenaire}}\",\n  \"nom\": \"Lyon Saint-Exupéry\",\n  \"ville\": \"Lyon\",\n  \"pays\": \"France\",\n  \"estLocal\": false,\n  \"urlApi\": \"http://localhost:8081/api\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('N est pas local', () => pm.expect(pm.response.json().estLocal).to.be.false);"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "0.2 Pistes",
+          "item": [
+            {
+              "name": "Créer piste 09L",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/pistes",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiant\": \"{{piste1}}\",\n  \"longueur\": 3600,\n  \"largeur\": 45,\n  \"orientation\": \"EST\",\n  \"capaciteMaximale\": 500,\n  \"aeroportCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Etat LIBRE', () => pm.expect(pm.response.json().etat).to.eql('LIBRE'));"
+              ]}}]
+            },
+            {
+              "name": "Créer piste 27R",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/pistes",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiant\": \"{{piste2}}\",\n  \"longueur\": 4200,\n  \"largeur\": 50,\n  \"orientation\": \"OUEST\",\n  \"capaciteMaximale\": 600,\n  \"aeroportCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Créer piste 09R",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/pistes",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiant\": \"{{piste3}}\",\n  \"longueur\": 2800,\n  \"largeur\": 40,\n  \"orientation\": \"EST\",\n  \"capaciteMaximale\": 400,\n  \"aeroportCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "0.3 Hangars",
+          "item": [
+            {
+              "name": "Créer hangar H1",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/hangars",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiant\": \"{{hangar1}}\",\n  \"capacite\": 5,\n  \"aeroportCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Etat Vide', () => pm.expect(pm.response.json().etat).to.eql('Vide'));"
+              ]}}]
+            },
+            {
+              "name": "Créer hangar H2 (capacité 1)",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/hangars",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiant\": \"{{hangar2}}\",\n  \"capacite\": 1,\n  \"aeroportCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "0.4 Avions",
+          "item": [
+            {
+              "name": "Créer avion F-GKXA",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/avions",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"immatriculation\": \"{{avion1}}\",\n  \"capacitePassager\": 180,\n  \"largeur\": 35.8,\n  \"longueur\": 38.7,\n  \"hauteur\": 12.5,\n  \"volumeBagage\": 45.0,\n  \"capaciteCarburant\": 26000,\n  \"autonomie\": 5500,\n  \"vitesseCroisiere\": 840,\n  \"etatMaintenance\": \"EN_SERVICE\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Pas en hangar', () => pm.expect(pm.response.json().inHangar).to.be.false);"
+              ]}}]
+            },
+            {
+              "name": "Créer avion F-HBNL",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/avions",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"immatriculation\": \"{{avion2}}\",\n  \"capacitePassager\": 220,\n  \"largeur\": 36.0,\n  \"longueur\": 44.5,\n  \"hauteur\": 13.0,\n  \"volumeBagage\": 55.0,\n  \"capaciteCarburant\": 30000,\n  \"autonomie\": 6000,\n  \"vitesseCroisiere\": 850,\n  \"etatMaintenance\": \"EN_SERVICE\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Créer avion F-GCDE",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/avions",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"immatriculation\": \"{{avion3}}\",\n  \"capacitePassager\": 150,\n  \"largeur\": 34.0,\n  \"longueur\": 35.0,\n  \"hauteur\": 11.5,\n  \"volumeBagage\": 40.0,\n  \"capaciteCarburant\": 20000,\n  \"autonomie\": 4500,\n  \"vitesseCroisiere\": 800,\n  \"etatMaintenance\": \"EN_REVISION\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "0.5 Passagers",
+          "item": [
+            {
+              "name": "Créer passager 1",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"nom\": \"Dupont\",\n  \"prenom\": \"Jean\",\n  \"email\": \"jean.dupont@email.com\",\n  \"telephone\": \"+33612345678\",\n  \"dateNaissance\": \"1985-06-15\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Créer passager 2",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager2}}\",\n  \"nom\": \"Martin\",\n  \"prenom\": \"Marie\",\n  \"email\": \"marie.martin@email.com\",\n  \"telephone\": \"+33698765432\",\n  \"dateNaissance\": \"1990-03-22\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Créer passager 3",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager3}}\",\n  \"nom\": \"Bernard\",\n  \"prenom\": \"Pierre\",\n  \"email\": \"pierre.bernard@email.com\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "0.6 Vols",
+          "item": [
+            {
+              "name": "Créer vol AF1234",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"{{vol1}}\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-06-15T10:00:00\",\n  \"heureArrivee\": \"2025-06-15T11:30:00\",\n  \"aeroportDepartCodeIATA\": \"{{aeroportLocal}}\",\n  \"aeroportArriveeCodeIATA\": \"{{aeroportPartenaire}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Statut PROGRAMME', () => pm.expect(pm.response.json().statut).to.eql('PROGRAMME'));"
+              ]}}]
+            },
+            {
+              "name": "Créer vol AF5678",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"{{vol2}}\",\n  \"type\": \"INTERNATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"New York\",\n  \"heureDepart\": \"2025-06-15T14:00:00\",\n  \"heureArrivee\": \"2025-06-15T22:00:00\",\n  \"aeroportDepartCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. CRUD Aéroports",
+      "item": [
+        {
+          "name": "Lire aéroport par code",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/{{aeroportLocal}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Code correct', () => pm.expect(pm.response.json().codeIATA).to.eql(pm.variables.get('aeroportLocal')));"
+          ]}}]
+        },
+        {
+          "name": "Lire aéroport local",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/local" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Est local', () => pm.expect(pm.response.json().estLocal).to.be.true);"
+          ]}}]
+        },
+        {
+          "name": "Lister tous les aéroports",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Lister partenaires",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/partenaires" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Modifier aéroport",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/aeroports/{{aeroportPartenaire}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Lyon Saint-Exupéry International\",\n  \"ville\": \"Lyon\",\n  \"pays\": \"France\",\n  \"estLocal\": false\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Nom modifié', () => pm.expect(pm.response.json().nom).to.include('International'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Aéroport non trouvé",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/XXX" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AEROPORT_NOT_FOUND'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Aéroport déjà existant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/aeroports",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"{{aeroportLocal}}\",\n  \"nom\": \"Doublon\",\n  \"ville\": \"Test\",\n  \"pays\": \"Test\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AEROPORT_ALREADY_EXISTS'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Second aéroport local",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/aeroports",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"ORY\",\n  \"nom\": \"Paris Orly\",\n  \"ville\": \"Paris\",\n  \"pays\": \"France\",\n  \"estLocal\": true\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AEROPORT_LOCAL_EXISTS'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "2. CRUD Avions",
+      "item": [
+        {
+          "name": "Lire avion",
+          "request": { "method": "GET", "url": "{{baseUrl}}/avions/{{avion1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Immatriculation', () => pm.expect(pm.response.json().immatriculation).to.eql(pm.variables.get('avion1')));"
+          ]}}]
+        },
+        {
+          "name": "Lister tous les avions",
+          "request": { "method": "GET", "url": "{{baseUrl}}/avions" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Lister avions disponibles",
+          "request": { "method": "GET", "url": "{{baseUrl}}/avions/disponibles" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Lister avions en hangar",
+          "request": { "method": "GET", "url": "{{baseUrl}}/avions/in-hangar" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Modifier avion",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/avions/{{avion1}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"{{avion1}}\",\n  \"capacitePassager\": 185,\n  \"largeur\": 35.8,\n  \"longueur\": 38.7,\n  \"hauteur\": 12.5,\n  \"volumeBagage\": 45.0,\n  \"capaciteCarburant\": 26000,\n  \"autonomie\": 5500,\n  \"vitesseCroisiere\": 840,\n  \"etatMaintenance\": \"OK\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Capacité modifiée', () => pm.expect(pm.response.json().capacitePassager).to.eql(185));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Avion non trouvé",
+          "request": { "method": "GET", "url": "{{baseUrl}}/avions/INEXISTANT" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AVION_NOT_FOUND'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Avion déjà existant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/avions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"{{avion1}}\",\n  \"capacitePassager\": 100,\n  \"largeur\": 30,\n  \"longueur\": 35,\n  \"hauteur\": 10,\n  \"volumeBagage\": 30,\n  \"capaciteCarburant\": 15000,\n  \"autonomie\": 3000,\n  \"vitesseCroisiere\": 700,\n  \"etatMaintenance\": \"OK\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AVION_ALREADY_EXISTS'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Dimensions invalides (capacité négative)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/avions",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-TEST\",\n  \"capacitePassager\": -10,\n  \"largeur\": 30,\n  \"longueur\": 35,\n  \"hauteur\": 10,\n  \"volumeBagage\": 30,\n  \"capaciteCarburant\": 15000,\n  \"autonomie\": 3000,\n  \"vitesseCroisiere\": 700,\n  \"etatMaintenance\": \"OK\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "3. CRUD Pistes",
+      "item": [
+        {
+          "name": "Lire piste",
+          "request": { "method": "GET", "url": "{{baseUrl}}/pistes/{{piste1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Identifiant', () => pm.expect(pm.response.json().identifiant).to.eql(pm.variables.get('piste1')));"
+          ]}}]
+        },
+        {
+          "name": "Lister toutes les pistes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/pistes" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Lister pistes disponibles",
+          "request": { "method": "GET", "url": "{{baseUrl}}/pistes/disponibles" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Transitions possibles piste",
+          "request": { "method": "GET", "url": "{{baseUrl}}/pistes/{{piste1}}/transitions" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Contient OCCUPEE', () => pm.expect(pm.response.json()).to.include('OCCUPEE'));"
+          ]}}]
+        },
+        {
+          "name": "Modifier piste",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/pistes/{{piste1}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"longueur\": 3700,\n  \"largeur\": 45,\n  \"orientation\": \"EST\",\n  \"capaciteMaximale\": 520\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Longueur modifiée', () => pm.expect(pm.response.json().longueur).to.eql(3700));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Piste non trouvée",
+          "request": { "method": "GET", "url": "{{baseUrl}}/pistes/INEXISTANT" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('PISTE_NOT_FOUND'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Piste déjà existante",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/pistes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"{{piste1}}\",\n  \"longueur\": 3000,\n  \"largeur\": 40,\n  \"orientation\": \"NORD\",\n  \"capaciteMaximale\": 400\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('PISTE_ALREADY_EXISTS'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Dimensions invalides",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/pistes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"TEST\",\n  \"longueur\": -100,\n  \"largeur\": 40,\n  \"orientation\": \"NORD\",\n  \"capaciteMaximale\": 400\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "4. Transitions Piste (State Machine)",
+      "item": [
+        {
+          "name": "LIBRE → EN_MAINTENANCE (valide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=EN_MAINTENANCE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Nouvel état', () => pm.expect(pm.response.json().etat).to.eql('EN_MAINTENANCE'));"
+          ]}}]
+        },
+        {
+          "name": "EN_MAINTENANCE → LIBRE (valide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=LIBRE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Nouvel état', () => pm.expect(pm.response.json().etat).to.eql('LIBRE'));"
+          ]}}]
+        },
+        {
+          "name": "LIBRE → FERMEE (valide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=FERMEE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Nouvel état', () => pm.expect(pm.response.json().etat).to.eql('FERMEE'));"
+          ]}}]
+        },
+        {
+          "name": "FERMEE → HORS_SERVICE (valide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=HORS_SERVICE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Nouvel état', () => pm.expect(pm.response.json().etat).to.eql('HORS_SERVICE'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - HORS_SERVICE → LIBRE (invalide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=LIBRE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('TRANSITION_NOT_ALLOWED'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - HORS_SERVICE → OCCUPEE (invalide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=OCCUPEE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('TRANSITION_NOT_ALLOWED'));"
+          ]}}]
+        },
+        {
+          "name": "HORS_SERVICE → EN_MAINTENANCE (seule transition valide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=EN_MAINTENANCE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Nouvel état', () => pm.expect(pm.response.json().etat).to.eql('EN_MAINTENANCE'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - EN_MAINTENANCE → OCCUPEE (invalide)",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=OCCUPEE" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('TRANSITION_NOT_ALLOWED'));"
+          ]}}]
+        },
+        {
+          "name": "Restaurer piste LIBRE",
+          "request": { "method": "PATCH", "url": "{{baseUrl}}/pistes/{{piste3}}/etat?nouvelEtat=LIBRE" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "5. CRUD Hangars",
+      "item": [
+        {
+          "name": "Lire hangar",
+          "request": { "method": "GET", "url": "{{baseUrl}}/hangars/{{hangar1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Identifiant', () => pm.expect(pm.response.json().identifiant).to.eql(pm.variables.get('hangar1')));"
+          ]}}]
+        },
+        {
+          "name": "Lister tous les hangars",
+          "request": { "method": "GET", "url": "{{baseUrl}}/hangars" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Lister avions dans hangar",
+          "request": { "method": "GET", "url": "{{baseUrl}}/hangars/{{hangar1}}/avions" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Avions disponibles pour association",
+          "request": { "method": "GET", "url": "{{baseUrl}}/hangars/avions/disponibles" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Associer avion à hangar",
+          "request": { "method": "POST", "url": "{{baseUrl}}/hangars/{{hangar1}}/avions/{{avion3}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Avion ajouté', () => pm.expect(pm.response.json().nombreAvions).to.be.above(0));"
+          ]}}]
+        },
+        {
+          "name": "Vérifier état Disponible",
+          "request": { "method": "GET", "url": "{{baseUrl}}/hangars/{{hangar1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Etat Disponible', () => pm.expect(pm.response.json().etat).to.eql('Disponible'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Avion déjà en hangar",
+          "request": { "method": "POST", "url": "{{baseUrl}}/hangars/{{hangar1}}/avions/{{avion3}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('HANGAR_AVION_ALREADY_IN'));"
+          ]}}]
+        },
+        {
+          "name": "Associer avion2 à hangar2",
+          "request": { "method": "POST", "url": "{{baseUrl}}/hangars/{{hangar2}}/avions/{{avion2}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Etat Rempli', () => pm.expect(pm.response.json().etat).to.eql('Rempli'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Hangar plein",
+          "request": { "method": "POST", "url": "{{baseUrl}}/hangars/{{hangar2}}/avions/{{avion1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('HANGAR_FULL'));"
+          ]}}]
+        },
+        {
+          "name": "Dissocier avion de hangar2",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/hangars/{{hangar2}}/avions/{{avion2}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Etat Vide', () => pm.expect(pm.response.json().etat).to.eql('Vide'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Avion pas dans ce hangar",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/hangars/{{hangar2}}/avions/{{avion1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AVION_PAS_DANS_CE_HANGAR'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Supprimer hangar non vide",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/hangars/{{hangar1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('HANGAR_NON_VIDE'));"
+          ]}}]
+        },
+        {
+          "name": "Dissocier avion de hangar1",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/hangars/{{hangar1}}/avions/{{avion3}}" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "ERR - Hangar non trouvé",
+          "request": { "method": "GET", "url": "{{baseUrl}}/hangars/INEXISTANT" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('HANGAR_NOT_FOUND'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Capacité invalide",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/hangars",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"H-TEST\",\n  \"capacite\": 0\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "6. CRUD Vols",
+      "item": [
+        {
+          "name": "Lire vol",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols/{{vol1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Numéro vol', () => pm.expect(pm.response.json().numeroVol).to.eql(pm.variables.get('vol1')));"
+          ]}}]
+        },
+        {
+          "name": "Lister tous les vols",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Lister vols par statut",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols?statut=PROGRAMME" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Transitions possibles vol",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols/{{vol1}}/transitions" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Contient ENREGISTREMENT', () => pm.expect(pm.response.json()).to.include('ENREGISTREMENT'));"
+          ]}}]
+        },
+        {
+          "name": "Modifier horaires vol",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/vols/{{vol1}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"heureDepart\": \"2025-06-15T10:30:00\",\n  \"heureArrivee\": \"2025-06-15T12:00:00\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Assigner avion au vol",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/vols/{{vol1}}/avion",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"{{avion1}}\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Avion assigné', () => pm.expect(pm.response.json().avionImmatriculation).to.eql(pm.variables.get('avion1')));"
+          ]}}]
+        },
+        {
+          "name": "Consulter avion assigné",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols/{{vol1}}/avion" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Immatriculation', () => pm.expect(pm.response.json().immatriculation).to.eql(pm.variables.get('avion1')));"
+          ]}}]
+        },
+        {
+          "name": "Historique vol",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols/{{vol1}}/historique" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "ERR - Vol non trouvé",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols/INEXISTANT" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('VOL_NOT_FOUND'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Vol déjà existant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/vols",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"{{vol1}}\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-06-16T10:00:00\",\n  \"heureArrivee\": \"2025-06-16T11:30:00\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('VOL_ALREADY_EXISTS'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Horaire incohérent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/vols",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-06-15T14:00:00\",\n  \"heureArrivee\": \"2025-06-15T10:00:00\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('HORAIRE_INCOHERENT'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Aéroports identiques",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/vols",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR2\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-06-15T10:00:00\",\n  \"heureArrivee\": \"2025-06-15T11:00:00\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AEROPORTS_IDENTIQUES'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "7. Transitions Vol (State Machine)",
+      "item": [
+        {
+          "name": "7.1 Flux normal décollage",
+          "item": [
+            {
+              "name": "PROGRAMME → ENREGISTREMENT",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=ENREGISTREMENT" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ENREGISTREMENT', () => pm.expect(pm.response.json().statut).to.eql('ENREGISTREMENT'));"
+              ]}}]
+            },
+            {
+              "name": "Assigner piste départ",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/vols/{{vol1}}/piste-depart",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiantPiste\": \"{{piste1}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Piste assignée', () => pm.expect(pm.response.json().pisteDepartIdentifiant).to.eql(pm.variables.get('piste1')));"
+              ]}}]
+            },
+            {
+              "name": "ENREGISTREMENT → EMBARQUEMENT",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=EMBARQUEMENT" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut EMBARQUEMENT', () => pm.expect(pm.response.json().statut).to.eql('EMBARQUEMENT'));"
+              ]}}]
+            },
+            {
+              "name": "EMBARQUEMENT → PRET_DECOLLAGE",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=PRET_DECOLLAGE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut PRET_DECOLLAGE', () => pm.expect(pm.response.json().statut).to.eql('PRET_DECOLLAGE'));"
+              ]}}]
+            },
+            {
+              "name": "PRET_DECOLLAGE → DECOLLE",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=DECOLLE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut DECOLLE', () => pm.expect(pm.response.json().statut).to.eql('DECOLLE'));"
+              ]}}]
+            },
+            {
+              "name": "DECOLLE → EN_VOL",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=EN_VOL" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut EN_VOL', () => pm.expect(pm.response.json().statut).to.eql('EN_VOL'));"
+              ]}}]
+            },
+            {
+              "name": "Assigner piste arrivée",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/vols/{{vol1}}/piste-arrivee",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiantPiste\": \"{{piste2}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Piste arrivée assignée', () => pm.expect(pm.response.json().pisteArriveeIdentifiant).to.eql(pm.variables.get('piste2')));"
+              ]}}]
+            },
+            {
+              "name": "EN_VOL → EN_APPROCHE",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=EN_APPROCHE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut EN_APPROCHE', () => pm.expect(pm.response.json().statut).to.eql('EN_APPROCHE'));"
+              ]}}]
+            },
+            {
+              "name": "EN_APPROCHE → ATTERRI",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=ATTERRI" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ATTERRI', () => pm.expect(pm.response.json().statut).to.eql('ATTERRI'));"
+              ]}}]
+            },
+            {
+              "name": "ATTERRI → ARRIVE (terminal)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=ARRIVE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ARRIVE', () => pm.expect(pm.response.json().statut).to.eql('ARRIVE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Transition depuis état terminal",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/{{vol1}}/statut?statut=PROGRAMME" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('TRANSITION_NOT_ALLOWED'));"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "7.2 Transitions invalides",
+          "item": [
+            {
+              "name": "Créer vol pour tests transitions",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"AF-TRANS\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Nice\",\n  \"heureDepart\": \"2025-07-01T08:00:00\",\n  \"heureArrivee\": \"2025-07-01T09:30:00\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "ERR - PROGRAMME → EMBARQUEMENT (invalide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=EMBARQUEMENT" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                "pm.test('Code erreur transition', () => pm.expect(pm.response.json().errorCode).to.eql('TRANSITION_NOT_ALLOWED'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - PROGRAMME → EN_VOL (invalide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=EN_VOL" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));"
+              ]}}]
+            },
+            {
+              "name": "ERR - PROGRAMME → DECOLLE (invalide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=DECOLLE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));"
+              ]}}]
+            },
+            {
+              "name": "ERR - PROGRAMME → ATTERRI (invalide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=ATTERRI" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));"
+              ]}}]
+            },
+            {
+              "name": "PROGRAMME → RETARDE (valide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=RETARDE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut RETARDE', () => pm.expect(pm.response.json().statut).to.eql('RETARDE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - RETARDE → EMBARQUEMENT (invalide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=EMBARQUEMENT" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));"
+              ]}}]
+            },
+            {
+              "name": "RETARDE → ENREGISTREMENT (valide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=ENREGISTREMENT" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));"
+              ]}}]
+            },
+            {
+              "name": "ENREGISTREMENT → ANNULE (valide)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=ANNULE" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ANNULE', () => pm.expect(pm.response.json().statut).to.eql('ANNULE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - ANNULE → ENREGISTREMENT (terminal)",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-TRANS/statut?statut=ENREGISTREMENT" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));"
+              ]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Passagers CRUD",
+      "item": [
+        {
+          "name": "Lire passager",
+          "request": { "method": "GET", "url": "{{baseUrl}}/passagers/{{passager1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Numéro passeport', () => pm.expect(pm.response.json().numeroPasseport).to.eql(pm.variables.get('passager1')));"
+          ]}}]
+        },
+        {
+          "name": "Lister tous les passagers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/passagers",
+            "header": [{ "key": "Accept", "value": "application/x-ndjson" }]
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Modifier passager",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/passagers/{{passager1}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jean.dupont.updated@email.com\",\n  \"telephone\": \"+33699999999\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Email modifié', () => pm.expect(pm.response.json().email).to.include('updated'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Passager non trouvé",
+          "request": { "method": "GET", "url": "{{baseUrl}}/passagers/INEXISTANT" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('PASSAGER_NOT_FOUND'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Passager déjà existant",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/passagers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"nom\": \"Autre\",\n  \"prenom\": \"Personne\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 409', () => pm.response.to.have.status(409));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('PASSAGER_ALREADY_EXISTS'));"
+          ]}}]
+        },
+        {
+          "name": "ERR - Passeport trop court",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/passagers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPasseport\": \"AB1\",\n  \"nom\": \"Test\",\n  \"prenom\": \"Test\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "ERR - Email invalide",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/passagers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPasseport\": \"ZZ999999\",\n  \"nom\": \"Test\",\n  \"prenom\": \"Test\",\n  \"email\": \"pas-un-email\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "ERR - Téléphone invalide",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/passagers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPasseport\": \"ZZ888888\",\n  \"nom\": \"Test\",\n  \"prenom\": \"Test\",\n  \"telephone\": \"123\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "ERR - Date naissance future",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/passagers",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroPasseport\": \"ZZ777777\",\n  \"nom\": \"Test\",\n  \"prenom\": \"Test\",\n  \"dateNaissance\": \"2030-01-01\"\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "9. Check-in et Embarquement",
+      "item": [
+        {
+          "name": "9.1 Setup vol pour embarquement",
+          "item": [
+            {
+              "name": "Créer vol embarquement",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"AF-EMB\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Marseille\",\n  \"heureDepart\": \"2025-08-01T10:00:00\",\n  \"heureArrivee\": \"2025-08-01T11:30:00\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Assigner avion",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/vols/AF-EMB/avion",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"immatriculation\": \"{{avion2}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "9.2 Check-in",
+          "item": [
+            {
+              "name": "Check-in passager 1 - Economique",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"{{siege1}}\",\n  \"classeVoyage\": \"ECONOMIQUE\",\n  \"nombreBagages\": 2\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Statut ENREGISTRE', () => pm.expect(pm.response.json().statut).to.eql('ENREGISTRE'));",
+                "pm.test('Peut embarquer', () => pm.expect(pm.response.json().peutEmbarquer).to.be.true);",
+                "pm.test('Peut modifier', () => pm.expect(pm.response.json().peutModifier).to.be.true);"
+              ]}}]
+            },
+            {
+              "name": "Check-in passager 2 - Première",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager2}}\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"{{siege2}}\",\n  \"classeVoyage\": \"PREMIERE\",\n  \"nombreBagages\": 0\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                "pm.test('Classe PREMIERE', () => pm.expect(pm.response.json().classeVoyage).to.eql('PREMIERE'));"
+              ]}}]
+            },
+            {
+              "name": "Check-in passager 3 - Affaires",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager3}}\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"{{siege3}}\",\n  \"classeVoyage\": \"AFFAIRES\",\n  \"nombreBagages\": 1\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Consulter enregistrement",
+              "request": { "method": "GET", "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Siège correct', () => pm.expect(pm.response.json().numeroSiege).to.eql(pm.variables.get('siege1')));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Déjà enregistré",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"15C\",\n  \"classeVoyage\": \"ECONOMIQUE\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('ENREGISTREMENT_ALREADY_EXISTS'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Siège occupé",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"TEMP001\",\n  \"nom\": \"Temp\",\n  \"prenom\": \"Test\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "ERR - Siège occupé (check-in)",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"TEMP001\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"{{siege1}}\",\n  \"classeVoyage\": \"ECONOMIQUE\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('SIEGE_DEJA_OCCUPE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Format siège invalide",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"TEMP001\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"INVALIDE\",\n  \"classeVoyage\": \"ECONOMIQUE\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+            },
+            {
+              "name": "ERR - Trop de bagages",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/check-in",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"TEMP001\",\n  \"numeroVol\": \"AF-EMB\",\n  \"numeroSiege\": \"20A\",\n  \"classeVoyage\": \"ECONOMIQUE\",\n  \"nombreBagages\": 15\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "9.3 Modification enregistrement",
+          "item": [
+            {
+              "name": "Changer de siège",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nouveauSiege\": \"15C\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Siège modifié', () => pm.expect(pm.response.json().numeroSiege).to.eql('15C'));"
+              ]}}]
+            },
+            {
+              "name": "Changer de classe",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"classeVoyage\": \"PREMIUM_ECONOMIQUE\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Classe modifiée', () => pm.expect(pm.response.json().classeVoyage).to.eql('PREMIUM_ECONOMIQUE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Siège déjà pris",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nouveauSiege\": \"{{siege2}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('SIEGE_DEJA_OCCUPE'));"
+              ]}}]
+            },
+            {
+              "name": "Remettre siège original",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nouveauSiege\": \"{{siege1}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "9.4 Embarquement",
+          "item": [
+            {
+              "name": "ERR - Embarquement sans statut EMBARQUEMENT",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/embarquement",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"numeroVol\": \"AF-EMB\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur statut', () => pm.expect(pm.response.json().errorCode).to.eql('STATUT_INVALIDE'));"
+              ]}}]
+            },
+            {
+              "name": "Vol → ENREGISTREMENT",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-EMB/statut?statut=ENREGISTREMENT" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Vol → EMBARQUEMENT",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-EMB/statut?statut=EMBARQUEMENT" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Embarquer passager 1",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/embarquement",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"numeroVol\": \"AF-EMB\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut EMBARQUE', () => pm.expect(pm.response.json().statut).to.eql('EMBARQUE'));",
+                "pm.test('Heure embarquement', () => pm.expect(pm.response.json().heureEmbarquement).to.exist);",
+                "pm.test('Ne peut plus embarquer', () => pm.expect(pm.response.json().peutEmbarquer).to.be.false);",
+                "pm.test('Ne peut plus modifier', () => pm.expect(pm.response.json().peutModifier).to.be.false);"
+              ]}}]
+            },
+            {
+              "name": "ERR - Déjà embarqué",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/embarquement",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager1}}\",\n  \"numeroVol\": \"AF-EMB\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('EMBARQUEMENT_NON_AUTORISE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Modification après embarquement",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nouveauSiege\": \"20A\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('ENREGISTREMENT_NON_MODIFIABLE'));"
+              ]}}]
+            },
+            {
+              "name": "ERR - Annulation après embarquement",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/passagers/{{passager1}}/enregistrements/AF-EMB" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));"
+              ]}}]
+            },
+            {
+              "name": "Embarquer passager 2",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/passagers/embarquement",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroPasseport\": \"{{passager2}}\",\n  \"numeroVol\": \"AF-EMB\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Statut embarquement",
+              "request": { "method": "GET", "url": "{{baseUrl}}/vols/AF-EMB/passagers/embarquement/statut" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Passagers embarqués', () => pm.expect(pm.response.json().passagersEmbarques).to.eql(2));",
+                "pm.test('Passagers restants', () => pm.expect(pm.response.json().passagersRestants).to.eql(1));"
+              ]}}]
+            },
+            {
+              "name": "Liste passagers du vol",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/vols/AF-EMB/passagers",
+                "header": [{ "key": "Accept", "value": "application/x-ndjson" }]
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "9.5 Annulation enregistrement",
+          "item": [
+            {
+              "name": "Annuler enregistrement passager 3",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/passagers/{{passager3}}/enregistrements/AF-EMB" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]}}]
+            },
+            {
+              "name": "Vérifier statut ANNULE",
+              "request": { "method": "GET", "url": "{{baseUrl}}/passagers/{{passager3}}/enregistrements/AF-EMB" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ANNULE', () => pm.expect(pm.response.json().statut).to.eql('ANNULE'));"
+              ]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Opérations Aéroport",
+      "item": [
+        {
+          "name": "10.1 Setup",
+          "item": [
+            {
+              "name": "Créer vol opérations",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"AF-OPS\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Toulouse\",\n  \"heureDepart\": \"2025-09-01T14:00:00\",\n  \"heureArrivee\": \"2025-09-01T15:30:00\",\n  \"aeroportDepartCodeIATA\": \"{{aeroportLocal}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "10.2 Flux décollage via opérations",
+          "item": [
+            {
+              "name": "Préparer vol (avion + piste)",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/preparer?immatriculationAvion={{avion1}}&identifiantPiste={{piste1}}" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Avion assigné', () => pm.expect(pm.response.json().avionImmatriculation).to.eql(pm.variables.get('avion1')));",
+                "pm.test('Piste assignée', () => pm.expect(pm.response.json().pisteDepartIdentifiant).to.eql(pm.variables.get('piste1')));"
+              ]}}]
+            },
+            {
+              "name": "Démarrer enregistrement",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/enregistrement" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ENREGISTREMENT', () => pm.expect(pm.response.json().statut).to.eql('ENREGISTREMENT'));"
+              ]}}]
+            },
+            {
+              "name": "Démarrer embarquement",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/embarquement" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut EMBARQUEMENT', () => pm.expect(pm.response.json().statut).to.eql('EMBARQUEMENT'));"
+              ]}}]
+            },
+            {
+              "name": "Autoriser décollage",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/autoriser-decollage" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut PRET_DECOLLAGE', () => pm.expect(pm.response.json().statut).to.eql('PRET_DECOLLAGE'));"
+              ]}}]
+            },
+            {
+              "name": "Confirmer décollage",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/decollage" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut DECOLLE', () => pm.expect(pm.response.json().statut).to.eql('DECOLLE'));"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "10.3 Flux atterrissage",
+          "item": [
+            {
+              "name": "Passer EN_VOL",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-OPS/statut?statut=EN_VOL" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Préparer atterrissage",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/preparer-atterrissage?identifiantPiste={{piste2}}" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut EN_APPROCHE', () => pm.expect(pm.response.json().statut).to.eql('EN_APPROCHE'));",
+                "pm.test('Piste arrivée', () => pm.expect(pm.response.json().pisteArriveeIdentifiant).to.eql(pm.variables.get('piste2')));"
+              ]}}]
+            },
+            {
+              "name": "Autoriser atterrissage",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/autoriser-atterrissage" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Confirmer atterrissage",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/atterrissage" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ATTERRI', () => pm.expect(pm.response.json().statut).to.eql('ATTERRI'));"
+              ]}}]
+            },
+            {
+              "name": "Libérer piste arrivée",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/liberer-piste" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Terminer vol",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-OPS/terminer" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ARRIVE', () => pm.expect(pm.response.json().statut).to.eql('ARRIVE'));"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "10.4 Opérations exceptionnelles",
+          "item": [
+            {
+              "name": "Créer vol pour retard",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"AF-DELAY\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Bordeaux\",\n  \"heureDepart\": \"2025-09-02T10:00:00\",\n  \"heureArrivee\": \"2025-09-02T11:30:00\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Retarder vol",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-DELAY/retarder" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut RETARDE', () => pm.expect(pm.response.json().statut).to.eql('RETARDE'));"
+              ]}}]
+            },
+            {
+              "name": "Annuler vol",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-DELAY/annuler" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut ANNULE', () => pm.expect(pm.response.json().statut).to.eql('ANNULE'));"
+              ]}}]
+            },
+            {
+              "name": "Créer vol pour détournement",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"AF-DIVERT\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Nice\",\n  \"heureDepart\": \"2025-09-03T08:00:00\",\n  \"heureArrivee\": \"2025-09-03T09:30:00\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "Assigner avion pour détournement",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/vols/AF-DIVERT/avion",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"immatriculation\": \"{{avion2}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Transitions jusqu'à EN_VOL",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-DIVERT/statut?statut=ENREGISTREMENT" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Assigner piste départ",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/vols/AF-DIVERT/piste-depart",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"identifiantPiste\": \"{{piste1}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "EMBARQUEMENT",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-DIVERT/statut?statut=EMBARQUEMENT" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "PRET_DECOLLAGE",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-DIVERT/statut?statut=PRET_DECOLLAGE" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "DECOLLE",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-DIVERT/statut?statut=DECOLLE" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "EN_VOL",
+              "request": { "method": "PATCH", "url": "{{baseUrl}}/vols/AF-DIVERT/statut?statut=EN_VOL" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Détourner vol",
+              "request": { "method": "POST", "url": "{{baseUrl}}/operations/AF-DIVERT/detourner" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                "pm.test('Statut DETOURNE', () => pm.expect(pm.response.json().statut).to.eql('DETOURNE'));"
+              ]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11. Trafic Dashboard",
+      "item": [
+        {
+          "name": "Vue consolidée trafic",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/{{aeroportLocal}}/trafic" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Contient statistiques', () => pm.expect(pm.response.json().statistiques).to.exist);",
+            "pm.test('Contient volsDepart', () => pm.expect(pm.response.json().volsDepart).to.exist);",
+            "pm.test('Contient pistes', () => pm.expect(pm.response.json().pistes).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Vols au départ",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/{{aeroportLocal}}/trafic/departs" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Vols à l'arrivée",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/{{aeroportLocal}}/trafic/arrivees" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Planning des pistes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/{{aeroportLocal}}/trafic/pistes" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "Planning piste spécifique",
+          "request": { "method": "GET", "url": "{{baseUrl}}/aeroports/{{aeroportLocal}}/trafic/pistes/{{piste1}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Identifiant piste', () => pm.expect(pm.response.json().identifiant).to.eql(pm.variables.get('piste1')));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "12. Suivi Vol (SSE)",
+      "item": [
+        {
+          "name": "Suivi vol complet",
+          "request": { "method": "GET", "url": "{{baseUrl}}/suivi/vols/AF-EMB" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Contient statutActuel', () => pm.expect(pm.response.json().statutActuel).to.exist);",
+            "pm.test('Contient passagersEmbarques', () => pm.expect(pm.response.json().passagersEmbarques).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Types d'événements",
+          "request": { "method": "GET", "url": "{{baseUrl}}/suivi/evenements/types" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "13. Vols Composites (avec escales)",
+      "item": [
+        {
+          "name": "Créer vol avec escales",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/vols",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"{{volComposite}}\",\n  \"type\": \"INTERNATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Tokyo\",\n  \"heureDepart\": \"2025-10-01T10:00:00\",\n  \"heureArrivee\": \"2025-10-02T08:00:00\",\n  \"segments\": [\n    {\n      \"origine\": \"Paris\",\n      \"destination\": \"Dubai\",\n      \"heureDepart\": \"2025-10-01T10:00:00\",\n      \"heureArrivee\": \"2025-10-01T18:00:00\"\n    },\n    {\n      \"origine\": \"Dubai\",\n      \"destination\": \"Tokyo\",\n      \"heureDepart\": \"2025-10-01T20:00:00\",\n      \"heureArrivee\": \"2025-10-02T08:00:00\"\n    }\n  ]\n}"
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Est composite', () => pm.expect(pm.response.json().estComposite).to.be.true);",
+            "pm.test('A des segments', () => pm.expect(pm.response.json().segments).to.have.length.above(0));",
+            "pm.test('A des escales', () => pm.expect(pm.response.json().escales).to.include('Dubai'));"
+          ]}}]
+        },
+        {
+          "name": "Lire vol composite",
+          "request": { "method": "GET", "url": "{{baseUrl}}/vols/{{volComposite}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Est composite', () => pm.expect(pm.response.json().estComposite).to.be.true);"
+          ]}}]
+        },
+        {
+          "name": "ERR - Supprimer vol composite",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/vols/{{volComposite}}" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('VOL_COMPOSITE_DELETE'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "14. Règles métier avancées",
+      "item": [
+        {
+          "name": "14.1 Avion en hangar non assignable à vol",
+          "item": [
+            {
+              "name": "Mettre avion3 en hangar",
+              "request": { "method": "POST", "url": "{{baseUrl}}/hangars/{{hangar1}}/avions/{{avion3}}" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            },
+            {
+              "name": "Créer vol test hangar",
+              "request": {
+                "method": "POST",
+                "url": "{{baseUrl}}/vols",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroVol\": \"AF-HANGAR\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-11-01T10:00:00\",\n  \"heureArrivee\": \"2025-11-01T11:30:00\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+            },
+            {
+              "name": "ERR - Assigner avion en hangar à vol",
+              "request": {
+                "method": "PATCH",
+                "url": "{{baseUrl}}/vols/AF-HANGAR/avion",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"immatriculation\": \"{{avion3}}\"\n}"
+                }
+              },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('AVION_NOT_AVAILABLE'));"
+              ]}}]
+            },
+            {
+              "name": "Sortir avion du hangar",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/hangars/{{hangar1}}/avions/{{avion3}}" },
+              "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+            }
+          ]
+        },
+        {
+          "name": "14.2 Suppression passager avec enregistrements",
+          "item": [
+            {
+              "name": "ERR - Supprimer passager avec enregistrement actif",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/passagers/{{passager1}}" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                "pm.test('Code erreur', () => pm.expect(pm.response.json().errorCode).to.eql('PASSAGER_ENREGISTREMENTS_ACTIFS'));"
+              ]}}]
+            }
+          ]
+        },
+        {
+          "name": "14.3 Suppression avion assigné à vol",
+          "item": [
+            {
+              "name": "ERR - Supprimer avion assigné",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/avions/{{avion1}}" },
+              "event": [{ "listen": "test", "script": { "exec": [
+                "pm.test('Status 400', () => pm.response.to.have.status(400));"
+              ]}}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99. Cleanup",
+      "item": [
+        {
+          "name": "Supprimer passager temp",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/passagers/TEMP001" },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 204 ou 404', () => [204, 404].includes(pm.response.code));"]}}]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,791 @@
+<div class="container">
+  @if (isLoadingExternes) {
+    <div class="full-page-loader">
+      <div class="loader-content">
+        <div class="big-spinner"></div>
+        <p>Veuillez patienter, les vols sont en cours de chargement...</p>
+      </div>
+    </div>
+  }
+  <h2>Gestion des Vols</h2>
+  <p class="section-subtitle">Gérez les vols, leurs statuts et les assignations</p>
+  <button type="button" (click)="loadVolsExternes()" class="btn-sm"
+          style="background: var(--primary);; color: white; padding: 8px 16px; border-radius: 10px">
+    @if (isLoadingExternes) {
+      <span class="spinner"></span>
+      Chargement...
+    } @else {
+      🔍 Voir Vols Partenaires (FTG)
+    }
+  </button>
+  @if (errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Formulaire -->
+  <div class="form-section">
+    <div class="form-header">
+      <h3 class="form-title">{{ editing ? 'Modifier un vol' : 'Ajouter un vol' }}</h3>
+      @if (editing) {
+        <span class="edit-badge">
+          ✏️ Modification: {{ editingNumeroVol }}
+        </span>
+      }
+    </div>
+
+    <form (ngSubmit)="saveVol()">
+      @if (!editing) {
+        <div class="form-group">
+          <label>Numéro de vol *</label>
+          <input [(ngModel)]="newVolCreate.numeroVol" name="numeroVol"
+                 placeholder="Ex: AF123"
+                 style="text-transform: uppercase;"
+                 (input)="newVolCreate.numeroVol = newVolCreate.numeroVol.toUpperCase()"
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label>Type de vol *</label>
+          <select [(ngModel)]="newVolCreate.type" name="type" required>
+            <option value="" disabled>-- Type de vol --</option>
+            @for (type of typeOptions; track $index) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Origine *</label>
+          <select [(ngModel)]="newVolCreate.origine" name="aeroportCodeIATA" class="form-control">
+            <option [ngValue]="null">-- Ville d'origine --</option>
+            <option *ngFor="let aeroport of aeroports" [ngValue]="aeroport.ville">
+              {{ aeroport.ville }}
+            </option>
+          </select>
+
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            Sélectionnez le point de départ
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Destination *</label>
+          <select [(ngModel)]="newVolCreate.destination" name="aeroportCodeIATA" class="form-control">
+            <option [ngValue]="null">-- Ville d'arrivée --</option>
+            <option *ngFor="let aeroport of aeroports" [ngValue]="aeroport.ville">
+              {{ aeroport.ville }}
+            </option>
+          </select>
+
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            Sélectionnez le point d'arrivé
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Heure de départ *</label>
+          <input [(ngModel)]="newVolCreate.heureDepart" name="heureDepart"
+                 type="datetime-local" [min]="getMinDateTime()" required>
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            L'heure de départ doit être postérieure à maintenant ({{ getCurrentDateTime() }})
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Heure d'arrivée *</label>
+          <input [(ngModel)]="newVolCreate.heureArrivee" name="heureArrivee"
+                 type="datetime-local" required>
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            L'heure d'arrivée doit être postérieure à l'heure de départ
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Code IATA Aéroport Départ *</label>
+          <select [(ngModel)]="newVolCreate.aeroportDepartCodeIATA"
+                  name="aeroportDepartCodeIATA"
+                  class="form-control"
+                  required
+                  [disabled]="!newVolCreate.origine">
+            <option [ngValue]="null">
+              {{ !newVolCreate.origine ? '-- Sélectionnez d\'abord une ville d\'origine --' : '-- Aucun aéroport --' }}
+            </option>
+            <option *ngFor="let aeroport of getAeroportsDepart()" [ngValue]="aeroport.codeIATA">
+              {{ aeroport.codeIATA }} - {{ aeroport.nom }}
+            </option>
+          </select>
+
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            @if (newVolCreate.origine) {
+              Sélectionnez l'aéroport de départ à {{ newVolCreate.origine }}
+            } @else {
+              Veuillez d'abord sélectionner une ville d'origine
+            }
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Code IATA Aéroport Arrivée *</label>
+          <select [(ngModel)]="newVolCreate.aeroportArriveeCodeIATA"
+                  name="aeroportArriveeCodeIATA"
+                  class="form-control"
+                  required
+                  [disabled]="!newVolCreate.destination">
+            <option [ngValue]="null">
+              {{ !newVolCreate.destination ? '-- Sélectionnez d\'abord une ville de destination --' : '-- Aucun aéroport --' }}
+            </option>
+            <option *ngFor="let aeroport of getAeroportsArrivee()" [ngValue]="aeroport.codeIATA">
+              {{ aeroport.codeIATA }} - {{ aeroport.nom }}
+            </option>
+          </select>
+
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            @if (newVolCreate.destination) {
+              Sélectionnez l'aéroport d'arrivée à {{ newVolCreate.destination }}
+            } @else {
+              Veuillez d'abord sélectionner une ville de destination
+            }
+          </small>
+        </div>
+      }
+
+      @if (editing) {
+        <div class="form-group">
+          <label>Heure de départ *</label>
+
+          <input [(ngModel)]="newVolUpdate.heureDepart" name="heureDepart"
+                 type="datetime-local"
+                 [min]="getMinDateTime()"
+                 [disabled]="isHeureDepartDisabled(currentEditingVol)"
+                 required>
+
+          @if (isHeureDepartDisabled(currentEditingVol)) {
+            <small style="color: #ef4444; display: block; margin-top: 0.25rem;">
+              Modification impossible : le vol est déjà en cours ou détourné.
+            </small>
+          }
+
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            L'heure de départ doit être supérieure à maintenant ({{ getCurrentDateTime() }})
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Heure d'arrivée *</label>
+          <input [(ngModel)]="newVolUpdate.heureArrivee" name="heureArrivee"
+                 type="datetime-local" required>
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            L'heure d'arrivée doit être supérieure à l'heure de départ
+          </small>
+        </div>
+      }
+
+      <div class="btn-group">
+        <button type="submit" class="btn-primary">
+          {{ editing ? '💾 Modifier' : '➕ Ajouter' }}
+        </button>
+        @if (editing) {
+          <button type="button" (click)="cancel()" class="btn-secondary">
+            ✖️ Annuler
+          </button>
+        }
+      </div>
+    </form>
+  </div>
+
+  <!-- Tableau des vols -->
+  <div class="table-container">
+    <div class="table-header">
+      <div class="table-title">🌍 Liste des Vols ({{ vols.length }})</div>
+    </div>
+
+    @if (vols.length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">🌍</div>
+        <div class="empty-state-text">Aucun vol enregistré</div>
+        <p class="empty-state-subtext">Commencez par ajouter votre premier vol</p>
+      </div>
+    } @else {
+      <table>
+        <thead>
+        <tr>
+          <th>Numéro</th>
+          <th>Type</th>
+          <th>Trajet</th>
+          <th>Horaires</th>
+          <th>Statut</th>
+          <th>Avion</th>
+          <th>Pistes</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (vol of vols; track vol.numeroVol) {
+            <tr>
+              <td>
+                <div><strong>{{ vol.numeroVol }}</strong></div>
+              </td>
+              <td>
+                <span class="status-badge"
+                      [class.status-libre]="vol.type === 'NATIONAL'"
+                      [class.status-occupee]="vol.type === 'INTERNATIONAL'">
+                  {{ vol.type }}
+                </span>
+              </td>
+              <td>
+                <div>📍 {{ vol.origine }}</div>
+                <div style="color: var(--secondary); font-size: 0.875rem;">
+                  → {{ vol.destination }}
+                </div>
+                @if (vol.aeroportDepartCodeIATA || vol.aeroportArriveeCodeIATA) {
+                  <div style="font-size: 0.75rem; color: var(--secondary); margin-top: 0.25rem;">
+                    {{ vol.aeroportDepartCodeIATA || '?' }} → {{ vol.aeroportArriveeCodeIATA || '?' }}
+                  </div>
+                }
+              </td>
+              <td>
+                <div><strong>Départ:</strong> {{ vol.heureDepart | date:'short' }}</div>
+                <div style="color: var(--secondary); font-size: 0.875rem;">
+                  <strong>Arrivée:</strong> {{ vol.heureArrivee | date:'short' }}
+                </div>
+                <div style="font-size: 0.75rem; color: var(--secondary); margin-top: 0.25rem;">
+                  ⏱️ {{ formatDuree(vol.dureeTotale) }}
+                </div>
+              </td>
+              <td>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;">
+                  <span class="status-badge"
+                        [class.status-libre]="vol.statut === 'PROGRAMME'"
+                        [class.status-occupee]="vol.statut === 'EN_VOL' || vol.statut === 'ENREGISTREMENT' || vol.statut === 'EN_APPROCHE' || vol.statut === 'DECOLLE' || vol.statut === 'PRET_DECOLLAGE' || vol.statut === 'EMBARQUEMENT'"
+                        [class.status-maintenance]="vol.statut === 'ATTERRI' || vol.statut === 'RETARDE' || vol.statut === 'ARRIVE' "
+                        [class.status-danger]="vol.statut === 'ANNULE' || vol.statut === 'DETOURNE'">
+                    {{ vol.statut }}
+                  </span>
+                  <button type="button"
+                          (click)="openChangeStatut(vol)"
+                          class="btn-sm"
+                          style="background: var(--secondary); color: white; font-size: 0.813rem;">
+                    🔄 Changer
+                  </button>
+                </div>
+              </td>
+
+
+              <!--ASSIGNER AVION -->
+              <td>
+                @if (vol.avionImmatriculation) {
+                  <span class="status-badge status-libre">
+                ✈️ {{ vol.avionImmatriculation }}
+              </span>
+                } @else {
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <span style="color: var(--secondary); font-style: italic; font-size: 0.875rem;">
+                  Non assigné
+                </span>
+                    @if (!vol.pisteDepartIdentifiant) {
+                      <!-- Bouton combiné : avion + piste départ -->
+                      <button type="button"
+                              (click)="openPreparerVol(vol.numeroVol)"
+                              class="btn-success btn-sm"
+                              style="background: var(--success); color: white;"
+                              title="Préparer le vol (assigner avion + piste)">
+                        🚀 Assigner un avion
+                      </button>
+                    } @else {
+                      <!-- Assignation individuelle avion -->
+                      <button type="button"
+                              (click)="openAssignerAvion(vol.numeroVol)"
+                              class="btn-success btn-sm">
+                        ➕ Assigner
+                      </button>
+                    }
+                  </div>
+                }
+              </td>
+
+              <!-- ASSIGNER PISTE -->
+              <td>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <!-- Piste départ -->
+                  <div>
+                    <strong style="font-size: 0.75rem;">🛫 Départ:</strong>
+                    @if (vol.pisteDepartIdentifiant) {
+                      <div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
+          <span class="status-badge status-libre" style="font-size: 0.75rem;">
+            {{ vol.pisteDepartIdentifiant }}
+          </span>
+                        <button (click)="libererPiste(vol.numeroVol, 'depart')"
+                                class="btn-danger"
+                                style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                          ✖️
+                        </button>
+                      </div>
+                    } @else {
+                      @if (vol.avionImmatriculation) {
+                        <!-- Assignation individuelle si avion assigné -->
+                        <button (click)="openAssignerPiste(vol.numeroVol, 'depart')"
+                                class="btn-sm"
+                                style="background: var(--success); color: white; font-size: 0.75rem; margin-top: 0.25rem;"
+                                title="Assigner piste départ">
+                          ➕
+                        </button>
+                      } @else {
+                        <!-- Indiquer d'utiliser le bouton combiné -->
+                        <span style="color: var(--secondary); font-style: italic; font-size: 0.75rem; margin-top: 0.25rem; display: block;">
+            Via Assigner un avion
+          </span>
+                      }
+                    }
+                  </div>
+
+                  <!-- Piste arrivée -->
+                  <div>
+                    <strong style="font-size: 0.75rem;">🛬 Arrivée:</strong>
+                    @if (vol.pisteArriveeIdentifiant) {
+                      <div style="display: flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem;">
+          <span class="status-badge status-occupee" style="font-size: 0.75rem;">
+            {{ vol.pisteArriveeIdentifiant }}
+          </span>
+                        <button (click)="libererPiste(vol.numeroVol, 'arrivee')"
+                                class="btn-danger"
+                                style="padding: 0.25rem 0.25rem; font-size: 0.75rem;">
+                          ✖️
+                        </button>
+                      </div>
+                    } @else {
+                      <!-- Style identique à Avion : texte + bouton 🛬 -->
+                      <div style="display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem;">
+          <span style="color: var(--secondary); font-style: italic; font-size: 0.75rem;">
+            Non assignée
+          </span>
+                        <button (click)="openPreparerAtterrissage(vol.numeroVol)"
+                                class="btn-sm"
+                                style="background: #3b82f6; color: white; font-size: 0.75rem;"
+                                title="Préparer l'atterrissage">
+                          🛬 Assigner piste(s)
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <div class="action-buttons">
+                  <button (click)="editVol(vol)"
+                          class="btn-warning btn-sm"
+                          [disabled]="!canEditVol(vol)"
+                          [title]="!canEditVol(vol) ? 'Modification interdite pour ce statut' : 'Modifier le vol'"
+                          [style.opacity]="canEditVol(vol) ? '1' : '0.5'"
+                          [style.cursor]="canEditVol(vol) ? 'pointer' : 'not-allowed'">
+                    ✏️
+                  </button>
+                  <button (click)="deleteVol(vol.numeroVol)"
+                          class="btn-danger btn-sm"
+                          [disabled]="vol.statut !== 'PROGRAMME'"
+                          [title]="vol.statut === 'PROGRAMME' ? 'Supprimer le vol' : 'Ce vol ne peut pas être supprimé'"
+                          [style.opacity]="vol.statut === 'PROGRAMME' ? '1' : '0.5'"
+                          [style.cursor]="vol.statut === 'PROGRAMME' ? 'pointer' : 'not-allowed'">
+                    🗑️
+                  </button>
+                  <button (click)="consulterHistorique(vol)" class="btn-sm"
+                          style="background: var(--secondary); color: white;">
+                    {{ volHistoriqueSelectionne === vol.numeroVol ? '👁️' : '📜' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <!-- Historique -->
+            @if (volHistoriqueSelectionne === vol.numeroVol && historiqueAffiche) {
+              <tr>
+                <td colspan="8" style="background: var(--light); padding: 1.5rem;">
+                  <h4 style="margin-bottom: 1rem;">📜 Historique du vol {{ vol.numeroVol }}</h4>
+
+                  @if (historiqueAffiche.length === 0) {
+                    <p style="color: var(--secondary); font-style: italic;">
+                      Aucun historique disponible
+                    </p>
+                  } @else {
+                    <table style="margin: 0; background: white;">
+                      <thead>
+                      <tr>
+                        <th>Type d'action</th>
+                        <th>Ancienne valeur</th>
+                        <th>Nouvelle valeur</th>
+                        <th>Détails</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                        @for (h of historiqueAffiche; track $index) {
+                          <tr>
+                            <td>
+                              <span class="status-badge status-maintenance">
+                                {{ h.typeAction }}
+                              </span>
+                            </td>
+                            <td>{{ h.ancienneValeur || 'N/A' }}</td>
+                            <td><strong>{{ h.nouvelleValeur }}</strong></td>
+                            <td>{{ h.details || '-' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+
+  <!-- Modal pour changer le statut -->
+  @if (selectedVolForStatut) {
+    <div class="modal-overlay" (click)="selectedVolForStatut = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Changer le statut du vol {{ selectedVolForStatut.numeroVol }}</h3>
+          <button class="close-btn" (click)="selectedVolForStatut = null">✖️</button>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <p style="margin-bottom: 0.5rem;">
+            <strong>Statut actuel:</strong>
+            <span class="status-badge"
+                  [class.status-libre]="selectedVolForStatut.statut === 'PROGRAMME'"
+                  [class.status-occupee]="selectedVolForStatut.statut === 'EN_VOL' || selectedVolForStatut.statut === 'DECOLLE' || selectedVolForStatut.statut === 'PRET_DECOLLAGE'||
+                    selectedVolForStatut.statut === 'EMBARQUEMENT'||selectedVolForStatut.statut === 'ENREGISTREMENT'||selectedVolForStatut.statut === 'EN_APPROCHE'||selectedVolForStatut.statut === 'ATTERRI'||selectedVolForStatut.statut === 'ARRIVE'"
+                  style="margin-left: 0.5rem;">
+              {{ selectedVolForStatut.statut }}
+            </span>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label>Nouveau statut *</label>
+          <select [(ngModel)]="nouveauStatut" style="width: 100%;">
+            @for (statut of statutOptions; track $index) {
+              <option [value]="statut"
+                      [disabled]="!canTransitionTo(selectedVolForStatut, statut) && statut !== selectedVolForStatut.statut">
+                {{ statut }}
+              </option>
+            }
+          </select>
+        </div>
+        @if (nouveauStatut === 'ENREGISTREMENT' && !isPretPourEnregistrement(selectedVolForStatut)) {
+          <div style="margin-top: 1.5rem; padding: 1rem; background-color: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; color: #b91c1c; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">⚠️</span>
+            <div>
+              <strong style="display: block;">Action requise avant l'enregistrement</strong>
+              <p style="margin: 0; font-size: 0.875rem;">
+                Vous devez impérativement assigner un <strong>avion</strong> et une <strong>piste de départ</strong> avant de pouvoir valider ce statut.
+              </p>
+            </div>
+          </div>
+        }
+        @if (nouveauStatut === 'EN_APPROCHE' && !isPretPourApproche(selectedVolForStatut)) {
+          <div style="margin-top: 1.5rem; padding: 1rem; background-color:#fee2e2; border: 2px solid #ef4444; border-radius: 8px; color: #b91c1c; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">🛬</span>
+            <div>
+              <strong style="display: block;">Piste d'atterrissage requise</strong>
+              <p style="margin: 0; font-size: 0.875rem;">
+                Le vol ne peut pas passer en phase d'approche tant qu'une <strong>piste d'arrivée</strong> n'a pas été assignée.
+              </p>
+            </div>
+          </div>
+        }
+        @if (nouveauStatut === 'PRET_DECOLLAGE' && !isPretPourDecollage(selectedVolForStatut)) {
+          <div style="margin-top: 1.5rem; padding: 1rem; background-color: #fff7ed; border: 2px solid #f97316; border-radius: 8px; color: #9a3412; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">🛂</span>
+            <div>
+              <strong style="display: block;">Embarquement vide</strong>
+              <p style="margin: 0; font-size: 0.875rem;">
+                Impossible d'autoriser le décollage : <strong>aucun passager</strong> n'a encore été embarqué sur ce vol.
+              </p>
+            </div>
+          </div>
+        }
+        @if (nouveauStatut === 'EMBARQUEMENT' && !isPretPourEmbarquement(selectedVolForStatut)) {
+          <div style="margin-top: 1.5rem; padding: 1rem; background-color: #fff7ed; border: 2px solid #f97316; border-radius: 8px; color: #9a3412; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.5rem;">🛂</span>
+            <div>
+              <strong style="display: block;">Enregistrement vide</strong>
+              <p style="margin: 0; font-size: 0.875rem;">
+                Impossible d'autoriser l'embarquement : <strong>aucun passager</strong> n'a encore été enregistré sur ce vol.
+              </p>
+            </div>
+          </div>
+        }
+
+
+        @if (selectedVolForStatut.transitionsPossibles.length > 0) {
+          <div style="margin-top: 1rem; padding: 1rem; background: var(--light); border-radius: 8px;">
+            <strong style="font-size: 0.875rem;">✅ Transitions autorisées:</strong>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              @for (transition of selectedVolForStatut.transitionsPossibles; track $index) {
+                <span class="status-badge status-libre" style="font-size: 0.75rem;">
+                  {{ transition }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+          <button (click)="changeStatut()"
+                  class="btn-primary"
+                  style="flex: 1;"
+                  [disabled]="(nouveauStatut === 'ENREGISTREMENT' && !isPretPourEnregistrement(selectedVolForStatut)) ||
+                     (nouveauStatut === 'EN_APPROCHE' && !isPretPourApproche(selectedVolForStatut)) ||
+                      (nouveauStatut === 'PRET_DECOLLAGE' && !isPretPourDecollage(selectedVolForStatut)) ||
+                      (nouveauStatut === 'EMBARQUEMENT' && !isPretPourEmbarquement(selectedVolForStatut))"
+                  [style.opacity]="((nouveauStatut === 'ENREGISTREMENT' && !isPretPourEnregistrement(selectedVolForStatut)) ||
+                                    (nouveauStatut === 'EN_APPROCHE' && !isPretPourApproche(selectedVolForStatut)) ||
+                                    (nouveauStatut === 'PRET_DECOLLAGE' && !isPretPourDecollage(selectedVolForStatut))||
+                                    (nouveauStatut === 'EMBARQUEMENT' && !isPretPourEmbarquement(selectedVolForStatut))) ? '0.5' : '1'"
+                  [style.cursor]="((nouveauStatut === 'ENREGISTREMENT' && !isPretPourEnregistrement(selectedVolForStatut)) ||
+                           (nouveauStatut === 'EN_APPROCHE' && !isPretPourApproche(selectedVolForStatut))
+                           || (nouveauStatut === 'PRET_DECOLLAGE' && !isPretPourDecollage(selectedVolForStatut))||
+                           (nouveauStatut === 'EMBARQUEMENT' && !isPretPourEmbarquement(selectedVolForStatut))) ? 'not-allowed' : 'pointer'">
+            💾 Valider
+          </button>
+          <button (click)="selectedVolForStatut = null" class="btn-secondary" style="flex: 1;">
+            ✖️ Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal pour assigner un avion -->
+  @if (selectedVolForAssignAvion) {
+    <div class="modal-overlay" (click)="selectedVolForAssignAvion = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Assigner un avion au vol {{ selectedVolForAssignAvion }}</h3>
+          <button class="close-btn" (click)="selectedVolForAssignAvion = null">✖️</button>
+        </div>
+
+        @if (avionsDisponibles.length > 0) {
+          <ul class="item-list">
+            @for (avion of avionsDisponibles; track avion.immatriculation) {
+              <li>
+                <div class="item-info">
+                  <div class="item-title">✈️ {{ avion.immatriculation }}</div>
+                  <div class="item-details">
+                    👥 {{ avion.capacitePassager }} passagers ·
+                    🚀 {{ avion.vitesseCroisiere }} km/h ·
+                    {{ avion.etatMaintenance }}
+                  </div>
+                </div>
+                <button (click)="assignerAvionSelectionne(avion.immatriculation)"
+                        class="btn-success btn-sm">
+                  ➕ Assigner
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">
+            <p>Aucun avion disponible pour l'assignation</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+  <!-- Modal pour assigner une piste -->
+  @if (selectedVolForAssignPiste) {
+    <div class="modal-overlay" (click)="selectedVolForAssignPiste = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            Assigner une piste {{ typePiste === 'depart' ? 'de départ 🛫' : "d'arrivée 🛬" }}
+            au vol {{ selectedVolForAssignPiste }}
+          </h3>
+          <button class="close-btn" (click)="selectedVolForAssignPiste = null">✖️</button>
+        </div>
+
+        @if (pistesDisponibles.length > 0) {
+          <ul class="item-list">
+            @for (piste of pistesDisponibles; track piste.identifiant) {
+              <li>
+                <div class="item-info">
+                  <div class="item-title">🛤️ Piste {{ piste.identifiant }}</div>
+                  <div class="item-details">
+                    📏 {{ piste.longueur }}m × {{ piste.largeur }}m ·
+                    🧭 {{ piste.orientation }} ·
+                    ⚖️ {{ piste.capaciteMaximale / 1000 }}t
+                    @if (piste.aeroportCodeIATA) {
+                      · ✈️ {{ piste.aeroportCodeIATA }}
+                    }
+                  </div>
+                </div>
+                <button (click)="assignerPisteSelectionnee(piste.identifiant)"
+                        class="btn-success btn-sm">
+                  ➕ Assigner
+                </button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="empty-state">
+            <p style="color: var(--secondary);">
+              Aucune piste disponible pour cet aéroport.
+              @if (typePiste === 'depart') {
+                Vérifiez que le code IATA de l'aéroport de départ est correct.
+              } @else {
+                Vérifiez que le code IATA de l'aéroport d'arrivée est correct.
+              }
+            </p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Modal Préparer le vol (avion + piste départ) -->
+  @if (selectedVolForPreparation) {
+    <div class="modal-overlay" (click)="selectedVolForPreparation = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            Préparer le vol {{ selectedVolForPreparation }}
+          </h3>
+          <button class="close-btn" (click)="selectedVolForPreparation = null">✖️</button>
+        </div>
+
+        <!-- Sélection avion -->
+        <div class="form-group">
+          <label>Avion *</label>
+          <select [(ngModel)]="selectedAvionForPreparation" style="width: 100%;">
+            <option [ngValue]="''" disabled>-- Sélectionner un avion --</option>
+            @for (avion of avionsDisponibles; track avion.immatriculation) {
+              <option [ngValue]="avion.immatriculation">
+                {{ avion.immatriculation }} · {{ avion.capacitePassager }} pax · {{ avion.etatMaintenance }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <!-- Sélection piste départ -->
+        <div class="form-group" style="margin-top: 1rem;">
+          <label>Piste de départ *</label>
+          <select [(ngModel)]="selectedPisteForPreparation" style="width: 100%;">
+            <option [ngValue]="''" disabled>-- Sélectionner une piste --</option>
+            @for (piste of pistesDisponibles; track piste.identifiant) {
+              <option [ngValue]="piste.identifiant">
+                Piste {{ piste.identifiant }} · {{ piste.longueur }}m × {{ piste.largeur }}m · {{ piste.orientation }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+          <button (click)="preparerVolComplet()" class="btn-primary" style="flex: 1;">
+            💾 Valider
+          </button>
+          <button (click)="selectedVolForPreparation = null" class="btn-secondary" style="flex: 1;">
+            ✖️ Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+  <!-- Modal Préparer l'atterrissage (piste arrivée) -->
+  @if (selectedVolForPreparationAtterrissage) {
+    <div class="modal-overlay" (click)="selectedVolForPreparationAtterrissage = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            Préparer l'atterrissage du vol {{ selectedVolForPreparationAtterrissage }}
+          </h3>
+          <button class="close-btn" (click)="selectedVolForPreparationAtterrissage = null">✖️</button>
+        </div>
+
+        <div class="form-group">
+          <label>Piste d'arrivée *</label>
+          <select [(ngModel)]="selectedPisteForAtterrissage" style="width: 100%;">
+            <option [ngValue]="''" disabled>-- Sélectionner une piste --</option>
+            @for (piste of pistesDisponibles; track piste.identifiant) {
+              <option [ngValue]="piste.identifiant">
+                Piste {{ piste.identifiant }} · {{ piste.longueur }}m × {{ piste.largeur }}m · {{ piste.orientation }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+          <button (click)="preparerAtterrissageComplet()" class="btn-primary" style="flex: 1;">
+            💾 Valider
+          </button>
+          <button (click)="selectedVolForPreparationAtterrissage = null" class="btn-secondary" style="flex: 1;">
+            ✖️ Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+ <!-- MODAL API EXTERNE -->
+  @if (showExternesModal) {
+    <div class="modal-overlay" (click)="showExternesModal = false">
+      <div class="modal" (click)="$event.stopPropagation()" style="max-width: 900px;">
+        <div class="modal-header">
+          <h3 class="modal-title">🌍 Vols de l'Aéroport Partenaire (FTG)</h3>
+          <button class="close-btn" (click)="showExternesModal = false">✖️</button>
+        </div>
+
+        <div class="table-container" style="box-shadow: none; margin-top: 0;">
+          <table style="font-size: 0.9rem;">
+            <thead>
+            <tr>
+              <th>Vol</th>
+              <th>Trajet</th>
+              <th>Horaires</th>
+              <th>Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (vol of volsExternes; track vol.numeroVol) {
+                <tr>
+                  <td><strong>{{ vol.numeroVol }}</strong></td>
+                  <td>
+                  <span [style.color]="vol.destination === 'BJA' ? '#10b981' : 'inherit'">
+                    {{ vol.origine }} → {{ vol.destination }}
+                  </span>
+                    @if (vol.destination === 'BJA') { <small>(Arrivée chez nous)</small> }
+                  </td>
+                  <td>
+                    <div style="margin-bottom: 4px;">
+                      <strong>🛫 Décollage :</strong> {{ vol.heureDepart | date:'dd/MM/yyyy HH:mm' }}
+                    </div>
+                    <div style="color: var(--secondary);">
+                      <strong>🛬 Arrivée :</strong> {{ vol.heureArrivee | date:'dd/MM/yyyy HH:mm' }}
+                    </div>
+                  </td>
+                  <td>
+                   <span class="status-badge"
+                         [class.status-libre]="vol.statut === 'PROGRAMME'"
+                         [class.status-occupee]="vol.statut === 'EN_VOL' || vol.statut === 'ENREGISTREMENT' || vol.statut === 'EN_APPROCHE' || vol.statut === 'DECOLLE' || vol.statut === 'PRET_DECOLLAGE' || vol.statut === 'EMBARQUEMENT'"
+                         [class.status-maintenance]="vol.statut === 'ATTERRI' || vol.statut === 'RETARDE' || vol.statut === 'ARRIVE'"
+                         [class.status-danger]="vol.statut === 'ANNULE' || vol.statut === 'DETOURNE'">
+                      {{ vol.statut }}
+                   </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--secondary); text-align: center; font-style: italic;">
+          💡 Ces données proviennent de l'API de l'aéroport partenaire.
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

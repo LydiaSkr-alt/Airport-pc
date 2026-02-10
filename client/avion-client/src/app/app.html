@@ -1,0 +1,39 @@
+<nav class="app-nav">
+  <div class="app-logo">
+    ✈️ AirportLydIsmail
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab" [class.active]="activeTab === 'aeroports'" (click)="activeTab = 'aeroports'">
+      🛫 Aéroports
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'avions'" (click)="activeTab = 'avions'">
+      🛩️ Avions
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'pistes'" (click)="activeTab = 'pistes'">
+      🛬 Pistes
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'hangars'" (click)="activeTab = 'hangars'">
+      🏢 Hangars
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'vols'" (click)="activeTab = 'vols'">
+      🌍 Vols
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'passager'" (click)="activeTab = 'passager'">
+      👥 Passagers
+    </button>
+    <button class="nav-tab" [class.active]="activeTab === 'trafic'" (click)="activeTab = 'trafic'">
+      📊 Trafic
+    </button>
+  </div>
+</nav>
+
+<div [ngSwitch]="activeTab">
+  <app-aeroport *ngSwitchCase="'aeroports'"></app-aeroport>
+  <app-avion *ngSwitchCase="'avions'"></app-avion>
+  <app-piste *ngSwitchCase="'pistes'"></app-piste>
+  <app-hangar *ngSwitchCase="'hangars'"></app-hangar>
+  <app-vol *ngSwitchCase="'vols'"></app-vol>
+  <app-trafic *ngSwitchCase="'trafic'"></app-trafic>
+  <app-passager *ngSwitchCase="'passager'"></app-passager>
+</div>
+<app-notification-toast></app-notification-toast>

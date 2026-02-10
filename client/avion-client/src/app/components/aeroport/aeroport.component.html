@@ -1,0 +1,336 @@
+<div class="container">
+  <h2>Gestion des Aéroports</h2>
+  <p class="section-subtitle">Gérez les aéroports, leurs informations et leurs partenariats</p>
+
+  @if (errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  @if (successMessage) {
+    <div class="success-message">
+      ✅ {{ successMessage }}
+    </div>
+  }
+
+  <!-- Formulaire -->
+  <div class="form-section">
+    <div class="form-header">
+      <h3 class="form-title">{{ editing ? 'Modifier un aéroport' : 'Ajouter un aéroport' }}</h3>
+      @if (editing) {
+        <span class="edit-badge">
+          ✏️ Modification: {{ editingCodeIATA }}
+        </span>
+      }
+    </div>
+
+    <form (ngSubmit)="saveAeroport()">
+      @if (!editing) {
+        <div class="form-group">
+          <label>Code IATA *</label>
+          <input [(ngModel)]="newAeroportCreate.codeIATA" name="codeIATA"
+                 placeholder="Ex: CDG"
+                 maxlength="3"
+                 required
+                 style="text-transform: uppercase;">
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            Code international à 3 lettres
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Nom de l'aéroport *</label>
+          <input [(ngModel)]="newAeroportCreate.nom" name="nom"
+                 placeholder="Ex: Charles de Gaulle" required>
+        </div>
+
+        <div class="form-group">
+          <label>Ville *</label>
+          <input [(ngModel)]="newAeroportCreate.ville" name="ville"
+                 placeholder="Ex: Paris" required>
+        </div>
+
+        <div class="form-group">
+          <label>Pays *</label>
+          <input [(ngModel)]="newAeroportCreate.pays" name="pays"
+                 placeholder="Ex: France" required>
+        </div>
+
+        <div class="form-group">
+          <label>URL API (optionnel)</label>
+          <input [(ngModel)]="newAeroportCreate.urlApi" name="urlApi"
+                 type="url"
+                 placeholder="Ex: https://api.aeroport.com">
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            URL de l'API pour les aéroports partenaires
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox"
+                   [(ngModel)]="newAeroportCreate.estLocal"
+                   name="estLocal"
+                   style="width: auto; cursor: pointer;">
+            <span>Aéroport local</span>
+          </label>
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            Cochez si c'est votre aéroport principal
+          </small>
+        </div>
+      }
+
+      @if (editing) {
+        <div class="form-group">
+          <label>Nom de l'aéroport *</label>
+          <input [(ngModel)]="newAeroportUpdate.nom" name="nom"
+                 placeholder="Ex: Charles de Gaulle" required>
+        </div>
+
+        <div class="form-group">
+          <label>Ville *</label>
+          <input [(ngModel)]="newAeroportUpdate.ville" name="ville"
+                 placeholder="Ex: Paris" required>
+        </div>
+
+        <div class="form-group">
+          <label>Pays *</label>
+          <input [(ngModel)]="newAeroportUpdate.pays" name="pays"
+                 placeholder="Ex: France" required>
+        </div>
+
+        <div class="form-group">
+          <label>URL API (optionnel)</label>
+          <input [(ngModel)]="newAeroportUpdate.urlApi" name="urlApi"
+                 type="url"
+                 placeholder="Ex: https://api.aeroport.com">
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox"
+                   [(ngModel)]="newAeroportUpdate.estLocal"
+                   name="estLocal"
+                   style="width: auto; cursor: pointer;">
+            <span>Aéroport local</span>
+          </label>
+        </div>
+      }
+
+      <div class="btn-group">
+        <button type="submit" class="btn-primary">
+          {{ editing ? '💾 Modifier' : '➕ Ajouter' }}
+        </button>
+        @if (editing) {
+          <button type="button" (click)="cancel()" class="btn-secondary">
+            ✖️ Annuler
+          </button>
+        }
+      </div>
+    </form>
+  </div>
+
+  <!-- Navigation entre les vues -->
+  <div class="nav-tabs" style="margin-bottom: 2rem;">
+    <button class="nav-tab"
+            [class.active]="activeView === 'tous'"
+            (click)="changeView('tous')">
+      🌍 Tous les aéroports ({{ aeroports.length }})
+    </button>
+    <button class="nav-tab"
+            [class.active]="activeView === 'local'"
+            (click)="changeView('local')">
+      🏠 Aéroport local {{ aeroportLocal ? '(1)' : '(0)' }}
+    </button>
+    <button class="nav-tab"
+            [class.active]="activeView === 'partenaires'"
+            (click)="changeView('partenaires')">
+      🤝 Partenaires ({{ partenaires.length }})
+    </button>
+  </div>
+
+  <!-- Affichage spécial pour l'aéroport local -->
+  @if (activeView === 'local' && aeroportLocal) {
+    <div class="table-container" style="margin-bottom: 2rem;">
+      <div class="table-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="table-title">🏠 Votre Aéroport Local</div>
+      </div>
+
+      <div style="padding: 2rem;">
+        <div class="card" style="border-left: 4px solid var(--primary);">
+          <div class="card-header">
+            <div>
+              <div class="card-title" style="font-size: 1.5rem;">
+                {{ aeroportLocal.codeIATA }} - {{ aeroportLocal.nom }}
+              </div>
+              <div style="color: var(--secondary); margin-top: 0.5rem;">
+                📍 {{ aeroportLocal.ville }}, {{ aeroportLocal.pays }}
+              </div>
+            </div>
+            <span class="status-badge status-libre" style="font-size: 1rem; padding: 0.75rem 1.25rem;">
+              🏠 LOCAL
+            </span>
+          </div>
+
+          <div class="card-body" style="margin-top: 1rem;">
+            <div class="stats-grid" style="margin-top: 1rem;">
+              <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="stat-value">{{ aeroportLocal.nombrePistes }}</div>
+                <div class="stat-label">🛬 Pistes</div>
+              </div>
+
+              <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stat-value">{{ aeroportLocal.nombreHangars }}</div>
+                <div class="stat-label">🏢 Hangars</div>
+              </div>
+            </div>
+
+            @if (aeroportLocal.urlApi) {
+              <div style="margin-top: 1rem; padding: 1rem; background: var(--light); border-radius: 8px;">
+                <strong>🔗 API:</strong>
+                <a [href]="aeroportLocal.urlApi" target="_blank" style="color: var(--primary); margin-left: 0.5rem;">
+                  {{ aeroportLocal.urlApi }}
+                </a>
+              </div>
+            }
+          </div>
+
+          <div class="card-footer">
+            <button (click)="editAeroport(aeroportLocal)" class="btn-warning">
+              ✏️ Modifier
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (activeView === 'local' && !aeroportLocal) {
+    <div class="empty-state">
+      <div class="empty-state-icon">🏠</div>
+      <div class="empty-state-text">Aucun aéroport local configuré</div>
+      <p class="empty-state-subtext">Créez un aéroport et cochez "Aéroport local"</p>
+    </div>
+  }
+
+  <!-- Tableau des aéroports -->
+  @if (activeView !== 'local' || !aeroportLocal) {
+    <div class="table-container">
+      <div class="table-header">
+        <div class="table-title">
+          @if (activeView === 'tous') {
+            🌍 Liste des Aéroports ({{ aeroportsAffiches.length }})
+          }
+          @if (activeView === 'partenaires') {
+            🤝 Aéroports Partenaires ({{ aeroportsAffiches.length }})
+          }
+        </div>
+      </div>
+
+      @if (aeroportsAffiches.length === 0) {
+        <div class="empty-state">
+          <div class="empty-state-icon">✈️</div>
+          <div class="empty-state-text">
+            @if (activeView === 'partenaires') {
+              Aucun aéroport partenaire
+            } @else {
+              Aucun aéroport enregistré
+            }
+          </div>
+          <p class="empty-state-subtext">
+            @if (activeView === 'partenaires') {
+              Les aéroports partenaires ont une URL API configurée
+            } @else {
+              Commencez par ajouter votre premier aéroport
+            }
+          </p>
+        </div>
+      } @else {
+        <table>
+          <thead>
+          <tr>
+            <th>Code IATA</th>
+            <th>Nom</th>
+            <th>Localisation</th>
+          <!--  <th>Infrastructure</th> -->
+            <th>Type</th>
+            <th>API</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (aeroport of aeroportsAffiches; track aeroport.codeIATA) {
+              <tr>
+                <td>
+                  <strong style="font-size: 1.125rem; color: var(--primary);">
+                    {{ aeroport.codeIATA }}
+                  </strong>
+                </td>
+                <td>
+                  <strong>{{ aeroport.nom }}</strong>
+                </td>
+                <td>
+                  <div>📍 {{ aeroport.ville }}</div>
+                  <div style="color: var(--secondary); font-size: 0.875rem;">
+                    {{ aeroport.pays }}
+                  </div>
+                </td>
+                <!--
+                <td>
+                  <div style="display: flex; gap: 1rem;">
+                    <span style="font-size: 0.875rem;">
+                      🛬 {{ aeroport.nombrePistes }} piste(s)
+                    </span>
+                    <span style="font-size: 0.875rem;">
+                      🏢 {{ aeroport.nombreHangars }} hangar(s)
+                    </span>
+                  </div>
+                </td>-->
+                <td>
+                  @if (aeroport.estLocal) {
+                    <span class="status-badge status-libre">
+                      🏠 LOCAL
+                    </span>
+                  } @else if (aeroport.urlApi) {
+                    <span class="status-badge status-occupee">
+                      🤝 PARTENAIRE
+                    </span>
+                  } @else {
+                    <span class="status-badge status-maintenance">
+                      📋 STANDARD
+                    </span>
+                  }
+                </td>
+                <td>
+                  @if (aeroport.urlApi) {
+                    <a [href]="aeroport.urlApi"
+                       target="_blank"
+                       class="status-badge status-libre"
+                       style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;">
+                      🔗 Voir l'API
+                    </a>
+                  } @else {
+                    <span style="color: var(--secondary); font-style: italic; font-size: 0.875rem;">
+                      Non configurée
+                    </span>
+                  }
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button (click)="editAeroport(aeroport)" class="btn-warning btn-sm">
+                      ✏️
+                    </button>
+                    <button (click)="deleteAeroport(aeroport.codeIATA)" class="btn-danger btn-sm">
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+</div>

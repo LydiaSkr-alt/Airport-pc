@@ -1,0 +1,917 @@
+{
+  "info": {
+    "name": "Vol API - Tests Complets",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080"}
+  ],
+  "item": [
+    {
+      "name": "=== 00. SETUP DONNÉES ===",
+      "item": [
+        {
+          "name": "00.1 Créer aéroport CDG (local)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/aeroports",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"CDG\",\n  \"nom\": \"Charles de Gaulle\",\n  \"ville\": \"Paris\",\n  \"pays\": \"France\",\n  \"estLocal\": true\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Aéroport CDG créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.2 Créer aéroport LYS (partenaire)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/aeroports",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"LYS\",\n  \"nom\": \"Lyon Saint-Exupéry\",\n  \"ville\": \"Lyon\",\n  \"pays\": \"France\",\n  \"estLocal\": false,\n  \"urlApi\": \"http://lys-api:8080\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Aéroport LYS créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.3 Créer aéroport JFK (partenaire)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/aeroports",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"JFK\",\n  \"nom\": \"John F. Kennedy\",\n  \"ville\": \"New York\",\n  \"pays\": \"USA\",\n  \"estLocal\": false,\n  \"urlApi\": \"http://jfk-api:8080\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Aéroport JFK créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.4 Créer piste 08L (CDG)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/pistes",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"08L\",\n  \"longueur\": 4200.0,\n  \"largeur\": 60.0,\n  \"orientation\": \"EST\",\n  \"capaciteMaximale\": 500000.0,\n  \"aeroportCodeIATA\": \"CDG\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Piste 08L créée', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.5 Créer piste 26R (CDG)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/pistes",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"26R\",\n  \"longueur\": 3800.0,\n  \"largeur\": 55.0,\n  \"orientation\": \"OUEST\",\n  \"capaciteMaximale\": 400000.0,\n  \"aeroportCodeIATA\": \"CDG\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Piste 26R créée', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.6 Créer piste 18 (LYS)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/pistes",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"18\",\n  \"longueur\": 3000.0,\n  \"largeur\": 45.0,\n  \"orientation\": \"SUD\",\n  \"capaciteMaximale\": 300000.0,\n  \"aeroportCodeIATA\": \"LYS\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Piste 18 LYS créée', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.7 Créer piste 36 (LYS)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/pistes",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"36\",\n  \"longueur\": 2800.0,\n  \"largeur\": 45.0,\n  \"orientation\": \"NORD\",\n  \"capaciteMaximale\": 280000.0,\n  \"aeroportCodeIATA\": \"LYS\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Piste 36 LYS créée', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.8 Créer avion F-GZCP (EN_SERVICE)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/avions",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-GZCP\",\n  \"capacitePassager\": 500,\n  \"largeur\": 79.8,\n  \"longueur\": 72.7,\n  \"hauteur\": 24.1,\n  \"volumeBagage\": 175.0,\n  \"capaciteCarburant\": 320000.0,\n  \"autonomie\": 15000.0,\n  \"vitesseCroisiere\": 900.0,\n  \"etatMaintenance\": \"EN_SERVICE\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Avion F-GZCP créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.9 Créer avion F-HPJA (EN_SERVICE)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/avions",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-HPJA\",\n  \"capacitePassager\": 180,\n  \"largeur\": 35.8,\n  \"longueur\": 39.5,\n  \"hauteur\": 12.5,\n  \"volumeBagage\": 45.0,\n  \"capaciteCarburant\": 26000.0,\n  \"autonomie\": 5500.0,\n  \"vitesseCroisiere\": 850.0,\n  \"etatMaintenance\": \"EN_SERVICE\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Avion F-HPJA créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.10 Créer avion F-OKBR (EN_SERVICE)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/avions",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-OKBR\",\n  \"capacitePassager\": 220,\n  \"largeur\": 38.0,\n  \"longueur\": 44.5,\n  \"hauteur\": 13.5,\n  \"volumeBagage\": 55.0,\n  \"capaciteCarburant\": 30000.0,\n  \"autonomie\": 6000.0,\n  \"vitesseCroisiere\": 870.0,\n  \"etatMaintenance\": \"EN_SERVICE\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Avion F-OKBR créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        },
+        {
+          "name": "00.11 Créer avion F-PANNE (EN_PANNE)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/avions",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-PANNE\",\n  \"capacitePassager\": 150,\n  \"largeur\": 34.0,\n  \"longueur\": 37.0,\n  \"hauteur\": 11.5,\n  \"volumeBagage\": 38.0,\n  \"capaciteCarburant\": 24000.0,\n  \"autonomie\": 4800.0,\n  \"vitesseCroisiere\": 830.0,\n  \"etatMaintenance\": \"EN_PANNE\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Avion F-PANNE créé', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 01. VALIDATION CRÉATION VOL ===",
+      "item": [
+        {
+          "name": "01.1 POST - Créer vol valide CDG -> LYS",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF001\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-01T08:00:00\",\n  \"heureArrivee\": \"2025-12-01T09:15:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Vol créé correctement', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.numeroVol).to.eql('AF001');",
+            "  pm.expect(json.statut).to.eql('PROGRAMME');",
+            "  pm.expect(json.aeroportDepartCodeIATA).to.eql('CDG');",
+            "  pm.expect(json.aeroportArriveeCodeIATA).to.eql('LYS');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "01.2 POST - Erreur même origine/destination",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR-01\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-12-01T08:00:00\",\n  \"heureArrivee\": \"2025-12-01T09:00:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message erreur origine=destination', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('origine');",
+            "  pm.expect(body).to.include('destination');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "01.3 POST - Erreur même aéroport départ/arrivée",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR-02\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris CDG\",\n  \"destination\": \"Paris Orly\",\n  \"heureDepart\": \"2025-12-01T08:00:00\",\n  \"heureArrivee\": \"2025-12-01T09:00:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"CDG\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message erreur aéroports identiques', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('aéroport');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "01.4 POST - Erreur heureArrivée avant heureDepart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR-03\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-01T14:00:00\",\n  \"heureArrivee\": \"2025-12-01T10:00:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message erreur horaires', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('arrivée');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "01.5 POST - Erreur doublon numéro vol",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF001\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Marseille\",\n  \"destination\": \"Nice\",\n  \"heureDepart\": \"2025-12-02T08:00:00\",\n  \"heureArrivee\": \"2025-12-02T09:00:00\"\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 409', () => pm.response.to.have.status(409));"]}}]
+        },
+        {
+          "name": "01.6 POST - Créer vol composite valide",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF200\",\n  \"type\": \"INTERNATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Tokyo\",\n  \"heureDepart\": \"2025-12-01T06:00:00\",\n  \"heureArrivee\": \"2025-12-02T08:00:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"JFK\",\n  \"segments\": [\n    {\"origine\": \"Paris\", \"destination\": \"Dubai\", \"heureDepart\": \"2025-12-01T06:00:00\", \"heureArrivee\": \"2025-12-01T14:00:00\"},\n    {\"origine\": \"Dubai\", \"destination\": \"Tokyo\", \"heureDepart\": \"2025-12-01T16:00:00\", \"heureArrivee\": \"2025-12-02T08:00:00\"}\n  ]\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Vol composite créé', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.estComposite).to.be.true;",
+            "  pm.expect(json.segments).to.have.length(2);",
+            "  pm.expect(json.escales).to.include('Dubai');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "01.7 POST - Erreur segments non chaînés",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR-04\",\n  \"type\": \"INTERNATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Tokyo\",\n  \"heureDepart\": \"2025-12-01T06:00:00\",\n  \"heureArrivee\": \"2025-12-02T08:00:00\",\n  \"segments\": [\n    {\"origine\": \"Paris\", \"destination\": \"Dubai\", \"heureDepart\": \"2025-12-01T06:00:00\", \"heureArrivee\": \"2025-12-01T14:00:00\"},\n    {\"origine\": \"Londres\", \"destination\": \"Tokyo\", \"heureDepart\": \"2025-12-01T16:00:00\", \"heureArrivee\": \"2025-12-02T08:00:00\"}\n  ]\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message segments non chaînés', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('chaîn');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "01.8 POST - Erreur segment horaires incohérents",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF-ERR-05\",\n  \"type\": \"INTERNATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Tokyo\",\n  \"heureDepart\": \"2025-12-01T06:00:00\",\n  \"heureArrivee\": \"2025-12-02T08:00:00\",\n  \"segments\": [\n    {\"origine\": \"Paris\", \"destination\": \"Dubai\", \"heureDepart\": \"2025-12-01T14:00:00\", \"heureArrivee\": \"2025-12-01T06:00:00\"}\n  ]\n}"
+            }
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 02. ASSIGNATION AVION ===",
+      "item": [
+        {
+          "name": "02.1 PATCH - Assigner avion disponible",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/avion",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"immatriculation\": \"F-GZCP\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Avion assigné', () => pm.expect(pm.response.json().avionImmatriculation).to.eql('F-GZCP'));"
+          ]}}]
+        },
+        {
+          "name": "02.2 GET - Consulter avion assigné",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols/AF001/avion"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Avion correct', () => pm.expect(pm.response.json().immatriculation).to.eql('F-GZCP'));"
+          ]}}]
+        },
+        {
+          "name": "02.3 PATCH - Erreur avion inexistant",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/avion",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"immatriculation\": \"XX-FAKE\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]}}]
+        },
+        {
+          "name": "02.4 PATCH - Erreur avion en panne",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/avion",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"immatriculation\": \"F-PANNE\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message avion non disponible', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('disponible');",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 03. ASSIGNATION PISTES ===",
+      "item": [
+        {
+          "name": "03.1 PATCH - Assigner piste départ (CDG -> 08L)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/piste-depart",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"08L\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Piste départ assignée', () => pm.expect(pm.response.json().pisteDepartIdentifiant).to.eql('08L'));"
+          ]}}]
+        },
+        {
+          "name": "03.2 PATCH - Erreur piste départ mauvais aéroport (18 = LYS)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/piste-depart",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"18\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message mauvais aéroport', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('aéroport');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "03.3 PATCH - Erreur piste arrivée (vol pas en vol)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/piste-arrivee",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"18\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message statut non autorisé', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('statut');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "03.4 PATCH - Erreur piste inexistante",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF001/piste-depart",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"99X\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]}}]
+        },
+        {
+          "name": "03.5 DELETE - Libérer piste départ",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF001/piste-depart"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Piste libérée', () => pm.expect(pm.response.json().pisteDepartIdentifiant).to.be.null);"
+          ]}}]
+        },
+        {
+          "name": "03.6 DELETE - Erreur libérer piste non assignée",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF001/piste-arrivee"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 04. PRÉREQUIS TRANSITIONS ===",
+      "item": [
+        {
+          "name": "04.1 POST - Créer vol pour test prérequis",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"numeroVol\": \"AF-PRE-01\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-05T08:00:00\",\n  \"heureArrivee\": \"2025-12-05T09:15:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+        },
+        {
+          "name": "04.2 PATCH - ENREGISTREMENT OK (pas besoin avion)",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=ENREGISTREMENT"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Statut ENREGISTREMENT', () => pm.expect(pm.response.json().statut).to.eql('ENREGISTREMENT'));"
+          ]}}]
+        },
+        {
+          "name": "04.3 PATCH - Erreur EMBARQUEMENT sans avion",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=EMBARQUEMENT"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message avion requis', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('avion');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "04.4 PATCH - Assigner avion",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-PRE-01/avion",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"immatriculation\": \"F-HPJA\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "04.5 PATCH - EMBARQUEMENT OK (avion assigné)",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=EMBARQUEMENT"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Statut EMBARQUEMENT', () => pm.expect(pm.response.json().statut).to.eql('EMBARQUEMENT'));"
+          ]}}]
+        },
+        {
+          "name": "04.6 PATCH - Erreur PRET_DECOLLAGE sans piste départ",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=PRET_DECOLLAGE"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message piste départ requise', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('piste');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "04.7 PATCH - Assigner piste départ",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-PRE-01/piste-depart",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"26R\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "04.8 PATCH - PRET_DECOLLAGE OK (avion + piste)",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=PRET_DECOLLAGE"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Statut PRET_DECOLLAGE', () => pm.expect(pm.response.json().statut).to.eql('PRET_DECOLLAGE'));"
+          ]}}]
+        },
+        {
+          "name": "04.9 DELETE - Erreur libérer piste en décollage",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF-PRE-01/piste-depart"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message phase décollage', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('décollage');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "04.10 PATCH - DECOLLE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=DECOLLE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "04.11 PATCH - EN_VOL",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=EN_VOL"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Statut EN_VOL', () => pm.expect(pm.response.json().statut).to.eql('EN_VOL'));"
+          ]}}]
+        },
+        {
+          "name": "04.12 PATCH - EN_APPROCHE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=EN_APPROCHE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "04.13 PATCH - Erreur ATTERRI sans piste arrivée",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=ATTERRI"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message piste arrivée requise', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('piste');",
+            "  pm.expect(body).to.include('arrivée');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "04.14 PATCH - Assigner piste arrivée",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-PRE-01/piste-arrivee",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"18\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "04.15 DELETE - Erreur libérer piste en approche",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF-PRE-01/piste-arrivee"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message approche finale', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('approche');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "04.16 PATCH - ATTERRI OK (piste assignée)",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=ATTERRI"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Statut ATTERRI', () => pm.expect(pm.response.json().statut).to.eql('ATTERRI'));"
+          ]}}]
+        },
+        {
+          "name": "04.17 PATCH - ARRIVE (terminal)",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-PRE-01/statut?statut=ARRIVE"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Vol terminé', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.statut).to.eql('ARRIVE');",
+            "  pm.expect(json.transitionsPossibles).to.be.empty;",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 05. WORKFLOW COMPLET VOL ===",
+      "item": [
+        {
+          "name": "05.1 POST - Créer vol workflow",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"numeroVol\": \"AF-WF-01\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-10T08:00:00\",\n  \"heureArrivee\": \"2025-12-10T09:15:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "pm.test('Statut PROGRAMME', () => pm.expect(pm.response.json().statut).to.eql('PROGRAMME'));"
+          ]}}]
+        },
+        {
+          "name": "05.2 PATCH - Assigner avion",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-WF-01/avion",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"immatriculation\": \"F-OKBR\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.3 PATCH - Assigner piste départ (08L CDG)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-WF-01/piste-depart",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"08L\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Piste 08L assignée', () => pm.expect(pm.response.json().pisteDepartIdentifiant).to.eql('08L'));"
+          ]}}]
+        },
+        {
+          "name": "05.4 PATCH - ENREGISTREMENT",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=ENREGISTREMENT"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.5 PATCH - EMBARQUEMENT",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=EMBARQUEMENT"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.6 PATCH - PRET_DECOLLAGE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=PRET_DECOLLAGE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.7 PATCH - DECOLLE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=DECOLLE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.8 PATCH - EN_VOL",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=EN_VOL"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.9 PATCH - Assigner piste arrivée (36 LYS)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-WF-01/piste-arrivee",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"36\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Piste 36 assignée', () => pm.expect(pm.response.json().pisteArriveeIdentifiant).to.eql('36'));"
+          ]}}]
+        },
+        {
+          "name": "05.10 PATCH - Erreur piste arrivée mauvais aéroport (26R = CDG)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-WF-01/piste-arrivee",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"26R\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message mauvais aéroport', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('aéroport');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "05.11 PATCH - EN_APPROCHE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=EN_APPROCHE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.12 PATCH - ATTERRI",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=ATTERRI"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "05.13 PATCH - ARRIVE (terminal)",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-WF-01/statut?statut=ARRIVE"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Vol terminé', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.statut).to.eql('ARRIVE');",
+            "  pm.expect(json.transitionsPossibles).to.be.empty;",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "05.14 GET - Historique complet",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols/AF-WF-01/historique"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Historique complet', () => {",
+            "  const json = pm.response.json();",
+            "  const actions = json.map(h => h.typeAction);",
+            "  pm.expect(actions).to.include('CREATION');",
+            "  pm.expect(actions).to.include('ASSIGNATION_AVION');",
+            "  pm.expect(actions).to.include('ASSIGNATION_PISTE');",
+            "  pm.expect(actions).to.include('CHANGEMENT_STATUT');",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 06. SUPPRESSION VOL ===",
+      "item": [
+        {
+          "name": "06.1 DELETE - Erreur supprimer vol composite",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF200"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message vol composite', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('composite');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "06.2 POST - Créer vol pour suppression",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"numeroVol\": \"AF-DEL-01\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-15T08:00:00\",\n  \"heureArrivee\": \"2025-12-15T09:15:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+        },
+        {
+          "name": "06.3 DELETE - Supprimer vol simple (PROGRAMME)",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF-DEL-01"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]}}]
+        },
+        {
+          "name": "06.4 GET - Vérifier suppression (404)",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols/AF-DEL-01"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]}}]
+        },
+        {
+          "name": "06.5 POST - Créer vol pour test suppression en cours",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"numeroVol\": \"AF-DEL-02\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-15T10:00:00\",\n  \"heureArrivee\": \"2025-12-15T11:15:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+        },
+        {
+          "name": "06.6 PATCH - Assigner avion pour vol en cours",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-DEL-02/avion",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"immatriculation\": \"F-GZCP\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "06.7 PATCH - Assigner piste départ pour vol en cours",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/vols/AF-DEL-02/piste-depart",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"identifiantPiste\": \"08L\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "06.8 PATCH - ENREGISTREMENT",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-DEL-02/statut?statut=ENREGISTREMENT"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "06.9 PATCH - EMBARQUEMENT",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-DEL-02/statut?statut=EMBARQUEMENT"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "06.10 PATCH - PRET_DECOLLAGE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-DEL-02/statut?statut=PRET_DECOLLAGE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "06.11 PATCH - DECOLLE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-DEL-02/statut?statut=DECOLLE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]}}]
+        },
+        {
+          "name": "06.12 DELETE - Erreur supprimer vol en cours",
+          "request": {"method": "DELETE", "url": "{{baseUrl}}/api/vols/AF-DEL-02"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message vol en cours', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('cours');",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 07. TRANSITIONS INVALIDES ===",
+      "item": [
+        {
+          "name": "07.1 POST - Créer vol pour transitions",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/vols",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"numeroVol\": \"AF-TR-01\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Paris\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-12-20T08:00:00\",\n  \"heureArrivee\": \"2025-12-20T09:15:00\",\n  \"aeroportDepartCodeIATA\": \"CDG\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"}
+          },
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"]}}]
+        },
+        {
+          "name": "07.2 GET - Transitions possibles (PROGRAMME)",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols/AF-TR-01/transitions"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Transitions depuis PROGRAMME', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json).to.include('ENREGISTREMENT');",
+            "  pm.expect(json).to.include('RETARDE');",
+            "  pm.expect(json).to.include('ANNULE');",
+            "  pm.expect(json).not.to.include('EN_VOL');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "07.3 PATCH - Erreur PROGRAMME -> EN_VOL",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-TR-01/statut?statut=EN_VOL"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Message transition non autorisée', () => {",
+            "  const body = JSON.stringify(pm.response.json()).toLowerCase();",
+            "  pm.expect(body).to.include('autorisée');",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "07.4 PATCH - Erreur PROGRAMME -> ARRIVE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-TR-01/statut?statut=ARRIVE"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        },
+        {
+          "name": "07.5 PATCH - Annuler vol",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-TR-01/statut?statut=ANNULE"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Vol annulé', () => {",
+            "  const json = pm.response.json();",
+            "  pm.expect(json.statut).to.eql('ANNULE');",
+            "  pm.expect(json.transitionsPossibles).to.be.empty;",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "07.6 PATCH - Erreur transition depuis ANNULE",
+          "request": {"method": "PATCH", "url": "{{baseUrl}}/api/vols/AF-TR-01/statut?statut=PROGRAMME"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"]}}]
+        }
+      ]
+    },
+    {
+      "name": "=== 08. CONSULTATION ===",
+      "item": [
+        {
+          "name": "08.1 GET - Tous les vols",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Liste non vide', () => pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty);"
+          ]}}]
+        },
+        {
+          "name": "08.2 GET - Vols par statut PROGRAMME",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols?statut=PROGRAMME"},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Tous PROGRAMME', () => {",
+            "  pm.response.json().forEach(v => pm.expect(v.statut).to.eql('PROGRAMME'));",
+            "});"
+          ]}}]
+        },
+        {
+          "name": "08.3 GET - Vol inexistant (404)",
+          "request": {"method": "GET", "url": "{{baseUrl}}/api/vols/XX-FAKE-99"},
+          "event": [{"listen": "test", "script": {"exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"]}}]
+        }
+      ]
+    }
+  ]
+}

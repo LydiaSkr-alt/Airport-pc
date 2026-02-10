@@ -1,0 +1,254 @@
+<div class="container">
+  <h2>Gestion des Pistes</h2>
+  <p class="section-subtitle">Gérez les pistes d'atterrissage et de décollage de l'aéroport</p>
+
+  @if (errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
+
+  <!-- Formulaire -->
+  <div class="form-section">
+    <div class="form-header">
+      <h3 class="form-title">{{ editing ? 'Modifier une piste' : 'Ajouter une piste' }}</h3>
+      @if (editing) {
+        <span class="edit-badge">
+          ✏️ Modification: {{ editingIdentifiant }}
+        </span>
+      }
+    </div>
+
+    <form (ngSubmit)="savePiste()">
+      @if (!editing) {
+        <div class="form-group">
+          <label>Identifiant *</label>
+          <input [(ngModel)]="newPisteCreate.identifiant" name="identifiant"
+                 placeholder="Ex: 09L/27R" required>
+        </div>
+
+        <div class="form-group">
+          <label>Longueur (m) *</label>
+          <input [(ngModel)]="newPisteCreate.longueur" name="longueur"
+                 type="number" step="1" placeholder="Ex: 3500" min="800" required>
+        </div>
+
+        <div class="form-group">
+          <label>Largeur (m) *</label>
+          <input [(ngModel)]="newPisteCreate.largeur" name="largeur"
+                 type="number" step="1" placeholder="Ex: 45" min="20" required>
+        </div>
+
+        <div class="form-group">
+          <label>Orientation *</label>
+          <select [(ngModel)]="newPisteCreate.orientation" name="orientation" required>
+            <option value="" disabled>-- Choisir une orientation --</option>
+            @for (orientation of orientationOptions; track $index) {
+              <option [value]="orientation">{{ orientation }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Capacité Maximale (kg) *</label>
+          <input [(ngModel)]="newPisteCreate.capaciteMaximale" name="capaciteMaximale"
+                 type="number" step="1000" placeholder="Ex: 200000" min="50000" required>
+        </div>
+
+        <div class="form-group">
+          <label>Code IATA Aéroport (optionnel)</label>
+          <select [(ngModel)]="newPisteCreate.aeroportCodeIATA" name="aeroportCodeIATA" class="form-control">
+            <option [ngValue]="null">-- Aucun aéroport --</option>
+            <option *ngFor="let aeroport of aeroports" [ngValue]="aeroport.codeIATA">
+              {{ aeroport.codeIATA }} - {{ aeroport.nom }} ({{ aeroport.ville }}, {{ aeroport.pays }})
+            </option>
+          </select>
+
+          <small style="color: var(--secondary); font-size: 0.813rem; margin-top: 0.25rem; display: block;">
+            Sélectionnez l'aéroport auquel assigner cette piste
+          </small>
+        </div>
+      }
+
+      @if (editing) {
+        <div class="form-group">
+          <label>Longueur (m) *</label>
+          <input [(ngModel)]="newPisteUpdate.longueur" name="longueur"
+                 type="number" step="1" placeholder="Ex: 3500" min="800" required>
+        </div>
+
+        <div class="form-group">
+          <label>Largeur (m) *</label>
+          <input [(ngModel)]="newPisteUpdate.largeur" name="largeur"
+                 type="number" step="1" placeholder="Ex: 45" min="20" required>
+        </div>
+
+        <div class="form-group">
+          <label>Orientation *</label>
+          <select [(ngModel)]="newPisteUpdate.orientation" name="orientation" required>
+            @for (orientation of orientationOptions; track $index) {
+              <option [value]="orientation">{{ orientation }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Capacité Maximale (kg) *</label>
+          <input [(ngModel)]="newPisteUpdate.capaciteMaximale" name="capaciteMaximale"
+                 type="number" step="1000" placeholder="Ex: 200000" min="50000" required>
+        </div>
+      }
+
+      <div class="btn-group">
+        <button type="submit" class="btn-primary">
+          {{ editing ? '💾 Modifier' : '➕ Ajouter' }}
+        </button>
+        @if (editing) {
+          <button type="button" (click)="cancel()" class="btn-secondary">
+            ✖️ Annuler
+          </button>
+        }
+      </div>
+    </form>
+  </div>
+
+  <!-- Tableau des pistes -->
+  <div class="table-container">
+    <div class="table-header">
+      <div class="table-title">🛬 Liste des Pistes ({{ pistes.length }})</div>
+    </div>
+
+    @if (pistes.length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">🛬</div>
+        <div class="empty-state-text">Aucune piste enregistrée</div>
+        <p class="empty-state-subtext">Commencez par ajouter votre première piste</p>
+      </div>
+    } @else {
+      <table>
+        <thead>
+        <tr>
+          <th>Identifiant</th>
+          <th>Dimensions</th>
+          <th>Orientation</th>
+          <th>Capacité Max</th>
+          <th>État</th>
+          <th>Aéroport</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+          @for (piste of pistes; track piste.identifiant) {
+            <tr>
+              <td><strong>{{ piste.identifiant }}</strong></td>
+              <td>
+                <div>📏 {{ piste.longueur }}m × {{ piste.largeur }}m</div>
+                <div style="font-size: 0.875rem; color: var(--secondary);">
+                  Surface: {{ (piste.longueur * piste.largeur).toLocaleString() }} m²
+                </div>
+              </td>
+              <td>🧭 {{ piste.orientation }}</td>
+              <td>
+                <div>⚖️ {{ piste.capaciteMaximale.toLocaleString() }} kg</div>
+                <div style="font-size: 0.875rem; color: var(--secondary);">
+                  {{ (piste.capaciteMaximale / 1000).toFixed(1) }} tonnes
+                </div>
+              </td>
+              <td>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;">
+                  <span class="status-badge"
+                        [class.status-libre]="piste.etat === 'LIBRE'"
+                        [class.status-occupee]="piste.etat === 'OCCUPEE'"
+                        [class.status-maintenance]="piste.etat === 'EN_MAINTENANCE'"
+                        [class.status-danger]="piste.etat === 'FERMEE' || piste.etat === 'HORS_SERVICE'">
+                    {{ piste.etat }}
+                  </span>
+                  <button type="button"
+                          (click)="openChangeEtat(piste)"
+                          class="btn-sm"
+                          style="background: var(--secondary); color: white; font-size: 0.813rem;">
+                    🔄 Changer
+                  </button>
+                </div>
+              </td>
+              <td>{{ piste.aeroportCodeIATA || '-' }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button (click)="editPiste(piste)" class="btn-warning btn-sm">
+                    ✏️
+                  </button>
+                  <button (click)="deletePiste(piste.identifiant)" class="btn-danger btn-sm">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Modal pour changer l'état -->
+  @if (selectedPisteForEtat) {
+    <div class="modal-overlay" (click)="selectedPisteForEtat = null">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">Changer l'état de la piste {{ selectedPisteForEtat.identifiant }}</h3>
+          <button class="close-btn" (click)="selectedPisteForEtat = null">✖️</button>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <p style="margin-bottom: 0.5rem;">
+            <strong>État actuel:</strong>
+            <span class="status-badge"
+                  [class.status-libre]="selectedPisteForEtat.etat === 'LIBRE'"
+                  [class.status-occupee]="selectedPisteForEtat.etat === 'OCCUPEE'"
+                  [class.status-maintenance]="selectedPisteForEtat.etat === 'EN_MAINTENANCE'"
+                  [class.status-danger]="selectedPisteForEtat.etat === 'FERMEE' || selectedPisteForEtat.etat === 'HORS_SERVICE'"
+                  style="margin-left: 0.5rem;">
+              {{ selectedPisteForEtat.etat }}
+            </span>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label>Nouvel état *</label>
+          <select [(ngModel)]="nouvelEtat" style="width: 100%;">
+            @for (etat of etatOptions; track $index) {
+              <option [value]="etat"
+                      [disabled]="!canTransitionTo(selectedPisteForEtat, etat) && etat !== selectedPisteForEtat.etat">
+                {{ etat }}
+                @if (!canTransitionTo(selectedPisteForEtat, etat) && etat !== selectedPisteForEtat.etat) {
+                  (non autorisé)
+                }
+              </option>
+            }
+          </select>
+        </div>
+
+        @if (selectedPisteForEtat.transitionsPossibles.length > 0) {
+          <div style="margin-top: 1rem; padding: 1rem; background: var(--light); border-radius: 8px;">
+            <strong style="font-size: 0.875rem;">✅ Transitions autorisées:</strong>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              @for (transition of selectedPisteForEtat.transitionsPossibles; track $index) {
+                <span class="status-badge status-libre" style="font-size: 0.75rem;">
+                  {{ transition }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+          <button (click)="changeEtat()" class="btn-primary" style="flex: 1;">
+            💾 Valider
+          </button>
+          <button (click)="selectedPisteForEtat = null" class="btn-secondary" style="flex: 1;">
+            ✖️ Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

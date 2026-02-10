@@ -1,0 +1,81 @@
+    @startuml
+
+class Avion {
+   - String immatriculation
+   - int capacitéPassager
+   - double largeur   <<m>>
+   - double longueur  <<m>>
+   - double hauteur   <<m>>
+   - double volumeBagage <<m3>>
+   - double capacitéCarburant <<litres>>
+   - double autonomie <<km>>
+   - double vitesseCroisière <<km/h>>
+   - EtatMaintenance etatMaintenance
+
+   + Avion lireAvion(String immatriculation)
+   + void mettreAJourAvion(Avion avion)
+   + void supprimerAvion(String immatriculation)
+   + void ajouterAvion(String immatriculation)
+}
+
+enum EtatMaintenance{
+}
+
+class Piste{
+   -String id
+   -double longuer
+   -double largeur
+   -EtatPiste etat
+   -Orientation orientation
+   -double capaciteMaximale <<tonnes>>
+
+   + Piste lirePiste(String identifiant)
+   + void mettreAjourEtatPiste(String id , EtatPiste etat)
+   + void supprimerPiste(String id)
+   + void consulterDisponibilite()
+
+
+}
+
+enum EtatPiste {
+   Libre
+   Occupée
+   EnMaintenance
+}
+
+enum Orientation{
+   Nord
+   Sud
+   Est
+   Ouest
+}
+
+
+class Hangar{
+   -String id
+   -int capacite
+   -EtatHangar etat
+
+
+   + Hangar creerHangar(String id, int capacite)
+   + Hangar lireHangar(String id)
+   + void mettreAJourHangar(Hangar hangar)
+   + void supprimerHangar(String id)
+   + void associerAvion(Avion avion)
+   + void dissocierAvion(Avion avion)
+   + List<Avion> listerAvions()
+}
+enum EtatHangar {
+   Disponible
+   Occupe
+   EnMaintenance
+}
+
+
+
+
+Hangar "1" o-- "0..*" Avion : contient
+Piste "0..*" -- "0..*" Avion : accueille
+
+
+@enduml

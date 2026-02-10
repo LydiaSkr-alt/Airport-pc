@@ -1,0 +1,404 @@
+<div class="container">
+  <h2>Gestion Passagers & Embarquement</h2>
+  <p class="section-subtitle">Gérez les passagers, effectuez le check-in et procédez à l’embarquement des passagers</p>
+
+  @if (errorMessage) {
+    <div class="alert-danger fade-in">⚠️ {{ errorMessage }}</div>
+  }
+  @if (successMessage) {
+    <div class="alert-success fade-in">✅ {{ successMessage }}</div>
+  }
+
+  <div class="nav-tabs-container">
+    <button class="nav-tab" [class.active]="activeView === 'passagers'" (click)="changeView('passagers')">
+      👥 Liste Passagers
+    </button>
+    <button class="nav-tab" [class.active]="activeView === 'checkin'" (click)="changeView('checkin')">
+      🎫 Enregistrement
+    </button>
+    <button class="nav-tab" [class.active]="activeView === 'enregistrement'" (click)="changeView('enregistrement')">
+      ✈️ Embarquement
+    </button>
+  </div>
+
+  @if (activeView === 'passagers') {
+    <div class="form-section">
+      <div class="form-header">
+        <h3 class="form-title">{{ isEditMode ? '✏️ Modifier le Passager' : '➕ Nouveau Passager' }}</h3>
+      </div>
+
+      <form>
+        @if (!isEditMode) {
+          <div class="form-group">
+            <label>Numéro de Passeport *</label>
+            <input [(ngModel)]="newPassager.numeroPasseport"
+                   [ngModelOptions]="{standalone: true}"
+                   placeholder="Ex: 123456789"
+                   required
+                   inputmode="numeric"
+                   pattern="[0-9]*"
+                   maxlength="9"
+                   (input)="validatePassportInput($event)"
+            >
+            <small style="color: #666; margin-top: 0.25rem; display: block;">
+              Le numéro de passeport doit contenir 9 chiffres
+            </small>
+          </div>
+          <div class="form-group">
+            <label>Prénom *</label>
+            <input [(ngModel)]="newPassager.prenom"
+                   [ngModelOptions]="{standalone: true}"
+                   required placeholder="Prénom">
+          </div>
+          <div class="form-group">
+            <label>Nom *</label>
+            <input [(ngModel)]="newPassager.nom"
+                   [ngModelOptions]="{standalone: true}"
+                   required placeholder="Nom">
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input [(ngModel)]="newPassager.email"
+                   [ngModelOptions]="{standalone: true}"
+                   type="email" required placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label>Téléphone *</label>
+            <div style="display: flex; gap: 5px;">
+              <select [(ngModel)]="phonePrefix" [ngModelOptions]="{standalone: true}" style="flex: 0 0 120px;">
+                @for (country of countries; track country.code) {
+                  <option [value]="country.code">{{ country.flag }} {{ country.code }}</option>
+                }
+              </select>
+              <input type="text" [(ngModel)]="phoneNumber" [ngModelOptions]="{standalone: true}"
+                     placeholder="780356890" maxlength="9" (input)="validatePhoneInput($event)" style="flex: 1;">
+            </div>
+          </div>
+        } @else {
+          <div class="form-group">
+            <label>Numéro de Passeport (Fixe)</label>
+            <input [value]="editPassager.numeroPasseport" disabled
+                   style="text-transform:uppercase; background-color: #f0f0f0;">
+          </div>
+          <div class="form-group">
+            <label>Prénom *</label>
+            <input [(ngModel)]="editPassager.prenom" [ngModelOptions]="{standalone: true}" required>
+          </div>
+          <div class="form-group">
+            <label>Nom *</label>
+            <input [(ngModel)]="editPassager.nom" [ngModelOptions]="{standalone: true}" required>
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input [(ngModel)]="editPassager.email" [ngModelOptions]="{standalone: true}" type="email" required>
+          </div>
+          <div class="form-group">
+            <label>Téléphone *</label>
+            <div style="display: flex; gap: 5px;">
+              <select [(ngModel)]="editPhonePrefix" [ngModelOptions]="{standalone: true}" style="flex: 0 0 120px;">
+                @for (country of countries; track country.code) {
+                  <option [value]="country.code">{{ country.flag }} {{ country.code }}</option>
+                }
+              </select>
+              <input type="text" [(ngModel)]="editPhoneNumber" [ngModelOptions]="{standalone: true}"
+                     maxlength="9" (input)="validateEditPhoneInput($event)" style="flex: 1;">
+            </div>
+          </div>
+        }
+
+        <div class="btn-group">
+          @if (!isEditMode) {
+            <button type="submit" (click)="createPassager()" [disabled]="isLoading">
+              {{ isLoading ? '⏳ Création...' : '➕ Ajouter' }}
+            </button>
+          } @else {
+            <button type="submit" (click)="updatePassager()" [disabled]="isLoading">
+              {{ isLoading ? '⏳ Modification...' : '💾 Enregistrer' }}
+            </button>
+            <button type="button" (click)="cancelEditPassager()" class="btn-secondary">❌ Annuler</button>
+          }
+        </div>
+      </form>
+    </div>
+    <div class="table-container">
+      <div class="table-header">
+        <h3 class="table-title">Liste des Passagers ({{ passagers.length }})</h3>
+      </div>
+
+      @if (isLoading && !isEditMode) {
+        <div class="empty-state">
+          <div class="spinner-border text-primary"></div>
+          <p class="empty-state-text">Chargement des passagers...</p>
+        </div>
+      } @else if (passagers.length === 0) {
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <p class="empty-state-text">Aucun passager enregistré</p>
+        </div>
+      } @else {
+        <table>
+          <thead>
+          <tr>
+            <th>Passeport</th>
+            <th>Identité</th>
+            <th>Email</th>
+            <th>Téléphone</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (p of passagers; track p.numeroPasseport) {
+              <tr [class.row-highlight]="p.numeroPasseport === passagerEnCoursEdition">
+                <td><strong>{{ p.numeroPasseport }}</strong></td>
+                <td>{{ p.nomComplet }}</td>
+                <td>{{ p.email || '-' }}</td>
+                <td>{{ p.telephone || '-' }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button (click)="startEditPassager(p)" class="btn-sm btn-warning">✏️</button>
+                    <button (click)="prefillCheckIn(p.numeroPasseport)" class="btn-sm btn-primary">🎫</button>
+                    <button (click)="deletePassager(p.numeroPasseport)" class="btn-sm btn-danger">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+  <!-- ======================== VUE 2: CHECK-IN ======================== -->
+  @if (activeView === 'checkin') {
+    <div class="form-section" >
+      <div class="form-header">
+        <h3 class="form-title">🎫 Enregistrement des passagers</h3>
+      </div>
+      <form>
+        <div class="form-group full-width">
+          <label>Passager *</label>
+          <select [(ngModel)]="checkInForm.numeroPasseport"
+                  [ngModelOptions]="{standalone: true}"
+                  class="form-control"
+                  style="padding: 0.75rem; font-size: 1rem;">
+            <option value="" disabled>-- Sélectionner un passager --</option>
+            @for (p of passagers; track p.numeroPasseport) {
+              <option [value]="p.numeroPasseport">
+                {{ p.nomComplet }} ({{ p.numeroPasseport }})
+              </option>
+            }
+          </select>
+          <small style="color: #666; margin-top: 0.25rem; display: block;">
+            Sélectionnez le passager depuis la liste ou utilisez le bouton 🎫 dans la liste des passagers
+          </small>
+        </div>
+        <div class="form-group full-width">
+          <label>Numéro de Vol *</label>
+          <select [(ngModel)]="checkInForm.numeroVol"
+                  [ngModelOptions]="{standalone: true}"
+                  class="form-control"
+                  style="padding: 0.75rem; font-size: 1rem;">
+            <option value="" disabled>-- Sélectionner un vol --</option>
+            @for (vol of volsDisponibles; track vol.numeroVol) {
+              <option [value]="vol.numeroVol"
+                      [disabled]="vol.statut !== StatutVol.ENREGISTREMENT">
+
+                @if (vol.statut === StatutVol.ENREGISTREMENT) { ✈️ } @else { 🔒 }
+
+                {{ vol.numeroVol }} ({{ vol.origine }} → {{ vol.destination }})
+                - {{ getStatutVolLabel(vol.statut) }}
+
+                @if (vol.statut !== StatutVol.ENREGISTREMENT) { (Check-in Fermé) }
+              </option>
+            }
+          </select>
+          <small style="color: #666">
+            Seuls les vols affichant (Statut: Enregistrement) acceptent le check-in.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Siège *</label>
+          <div style="display: flex; gap: 5px;">
+            <input [(ngModel)]="checkInForm.numeroSiege" [ngModelOptions]="{standalone: true}" readonly placeholder="Ex: 12A">
+            <button type="button" class="btn-sm btn-primary" (click)="openSeatModal()">💺 Plan</button>
+          </div>
+        </div>
+        @if (showSeatModal) {
+          <div class="modal-overlay" (click)="showSeatModal = false">
+            <div class="modal" (click)="$event.stopPropagation()" style="max-width: 400px;">
+              <div class="modal-header">
+                <h3 class="modal-title">Plan de l'avion - {{ checkInForm.numeroVol }}</h3>
+                <button class="close-btn" (click)="showSeatModal = false">✖️</button>
+              </div>
+
+              <div class="airplane-container" style="background: #f3f4f6; padding: 20px; border-radius: 50px 50px 10px 10px; border: 2px solid #ccc;">
+                <div class="seat-grid">
+                  @for (r of rangees; track r) {
+                    @for (c of colonnes; track c) {
+
+                      <div class="seat"
+                           [class.occupied]="siegesOccupes.includes(r + c)"
+                           [class.selected]="checkInForm.numeroSiege === (r + c)"
+                           (click)="selectSeat(r, c)"
+                           [style.pointer-events]="siegesOccupes.includes(r + c) ? 'none' : 'auto'">
+                        {{ r }}{{ c }}
+                      </div>
+
+                      @if (c === 'C') {
+                        <div style="display: flex; align-items: center; justify-content: center; color: #999; font-weight: bold;">
+                          {{ r }}
+                        </div>
+                      }
+                    }
+                  }
+                </div>
+              </div>
+              <div style="margin-top: 15px; display: flex; gap: 10px; font-size: 0.8rem; justify-content: center;">
+                <span><span style="display:inline-block; width:12px; height:12px; background:#fff; border:1px solid #007bff;"></span> Libre</span>
+                <span><span style="display:inline-block; width:12px; height:12px; background:#e9ecef;"></span> Occupé</span>
+                <span><span style="display:inline-block; width:12px; height:12px; background:#28a745;"></span> Sélection</span>
+              </div>
+            </div>
+          </div>
+        }
+        <div class="form-group full-width">
+          <label>Gestion des Bagages (en soute)</label>
+          <div class="bagage-container" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">🧳</span>
+                <div>
+                  <div style="font-weight: bold;">Valises enregistrées</div>
+                  <small style="color: #666;">Sac cabine inclus par défaut</small>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <button type="button" (click)="updateBagages(-1)"
+                        style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #007bff; background: white; color: #007bff; cursor: pointer;">-</button>
+                <span style="font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center;">
+          {{ checkInForm.nombreBagages }}
+        </span>
+                <button type="button" (click)="updateBagages(1)"
+                        style="width: 30px; height: 30px; border-radius: 50%; border: 1px solid #007bff; background: white; color: #007bff; cursor: pointer;">+</button>
+              </div>
+            </div>
+
+            @if (fraisBagages > 0) {
+              <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; font-size: 0.9rem;">
+                <strong>💰 Supplément à payer : {{ fraisBagages }}€</strong>
+                <div style="font-size: 0.8rem;">À régler lors de la dépose bagages à l'aéroport.</div>
+              </div>
+            } @else if (checkInForm.nombreBagages > 0) {
+              <div style="margin-top: 15px; color: #28a745; font-size: 0.9rem; font-weight: bold;">
+                ✅ Bagage inclus dans votre tarif {{ getClasseLabel(checkInForm.classeVoyage) }}
+              </div>
+            }
+          </div>
+        </div>
+        <div class="form-group full-width">
+          <label>Classe</label>
+          <select [(ngModel)]="checkInForm.classeVoyage" [ngModelOptions]="{standalone: true}" (change)="calculerPrix()">
+            @for (c of classesVoyage; track c) {
+              <option [value]="c">{{ getClasseLabel(c) }}</option>
+            }
+          </select>
+        </div>
+        <div class="btn-group">
+          <button type="submit" (click)="doCheckIn()" [disabled]="isLoading">✅ Valider</button>
+          <button type="button" (click)="checkInForm = emptyCheckIn()">🔄 Annuler</button>
+        </div>
+      </form>
+    </div>
+
+  }
+
+  <!-- Modal pour sélectionner un vol -->
+  <div *ngIf="showVolModal" class="vol-modal">
+    <h3>Choisir un vol pour le check-in</h3>
+    <ul class="vol-list">
+      <li *ngFor="let vol of volsDisponibles"
+          [class.disabled]="vol.statut !== StatutVol.ENREGISTREMENT"
+          (click)="vol.statut === StatutVol.ENREGISTREMENT && selectVol(vol.numeroVol)">
+        {{ vol.numeroVol }} - {{ getStatutVolLabel(vol.statut) }}
+        <span *ngIf="vol.statut !== StatutVol.ENREGISTREMENT" class="badge-closed">
+    Check-in fermé
+  </span>
+      </li>
+
+    </ul>
+
+    <button (click)="closeVolModal()">Annuler</button>
+  </div>
+
+
+  <!-- ======================== VUE 3: embarquement ======================== -->
+
+  @if (activeView === 'enregistrement') {
+    <div class="form-section">
+      <div class="form-header">
+        <h3 class="form-title">📋 Manifeste d'Embarquement</h3>
+      </div>
+
+      <div style="margin-bottom: 2rem; display: flex; gap: 10px; align-items: flex-end;">
+        <div class="form-group" style="flex: 1;">
+          <label>Sélectionner le Vol</label>
+          <select [(ngModel)]="consultationEnregistrement.numeroVol" class="form-control">
+            <option value="" disabled>-- Choisir un vol --</option>
+            @for (v of volsDisponibles; track v.numeroVol) {
+              <option [value]="v.numeroVol">✈️ {{ v.numeroVol }} ({{ v.origine }} → {{ v.destination }})</option>
+            }
+          </select>
+        </div>
+        <button type="button" (click)="consulterEnregistrement()" class="btn-primary" style="height: 45px;">
+          🔍 Charger
+        </button>
+      </div>
+
+      @if (enregistrementsDuVolSelectionne.length > 0) {
+        <div class="table-container fade-in">
+          <table>
+            <thead>
+            <tr>
+              <th>Siège</th>
+              <th>Passager</th>
+              <th>Classe</th>
+              <th>Bagages Soute</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (enreg of enregistrementsDuVolSelectionne; track enreg.id) {
+                <tr [class.row-annule]="enreg.statut === StatutEnregistrement.ANNULE">
+                  <td><strong>{{ enreg.numeroSiege }}</strong></td>
+                  <td>{{ enreg.passager.nomComplet }} <br> <small>{{ enreg.passager.numeroPasseport }}</small></td>
+                  <td>{{ getClasseLabel(enreg.classeVoyage) }}</td>
+                  <td>🧳 {{ enreg.nombreBagages }}</td>
+                  <td>
+                  <span class="status-badge" [ngClass]="getStatutBadgeClass(enreg.statut)">
+                    {{ getStatutLabel(enreg.statut) }}
+                  </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      @if (enreg.statut === StatutEnregistrement.ENREGISTRE) {
+                        <button (click)="prefillUpdate(enreg)" title="Modifier" class="btn-sm btn-warning">✏️</button>
+                        <button (click)="quickEmbarquer(enreg)" title="Embarquer" class="btn-sm btn-success">✈️</button>
+                        <button (click)="annulerDepuisListe(enreg)" title="Annuler" class="btn-sm btn-danger">🗑️</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (!isLoading && consultationEnregistrement.numeroVol) {
+        <div class="empty-state">
+          <p>Aucun passager enregistré pour ce vol.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

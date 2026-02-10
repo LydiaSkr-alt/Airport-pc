@@ -1,0 +1,245 @@
+@startuml
+
+class Avion {
+   - String immatriculation
+   - int capacitePassager
+   - double largeur
+   - double longueur
+   - double hauteur
+   - double volumeBagage
+   - double capaciteCarburant
+   - double autonomie
+   - double vitesseCroisiere
+   - EtatMaintenance etatMaintenance
+}
+
+enum EtatMaintenance {
+      OK,
+      EN_PANNE,
+      EN_SERVICE,
+      EN_REVISION
+}
+
+class Piste {
+   - String id
+   - double longueur
+   - double largeur
+   - EtatPiste etat
+   - Orientation orientation
+   - double capaciteMaximale
+}
+
+enum EtatPiste {
+     LIBRE,
+      OCCUPEE,
+      EN_MAINTENANCE
+}
+
+enum Orientation {
+   Nord
+   Sud
+   Est
+   Ouest
+}
+
+class Hangar {
+   - String id
+   - int capacite
+   - EtatHangar etat
+}
+
+enum EtatHangar {
+      Vide,
+      Rempli,
+      Disponible,
+      EnMaintenance
+}
+
+Hangar "1" o-- "0..*" Avion : contient
+Piste "0..*" -- "0..*" Avion : accueille
+
+
+enum TypeVol {
+   NATIONAL
+   INTERNATIONAL
+}
+
+enum StatutVol {
+   PREVU
+   EN_ATTENTE
+   EMBARQUEMENT
+   DECOLLE
+   EN_VOL
+   ARRIVE
+   ANNULE
+}
+
+'--- PATTERN COMPOSITE ---
+interface VolComponent <<interface>> {
+   + String getNumeroVol()
+   + String getOrigine()
+   + String getDestination()
+   + LocalDateTime getHeureDepart()
+   + LocalDateTime getHeureArrivee()
+   + StatutVol getStatut()
+   + TypeVol getType()
+   + void changerStatut(StatutVol nouveauStatut)
+   + double getDureeTotale()
+   + List<String> getEscales()
+   + boolean estComposite()
+   + Avion getAvionAssigne()
+   + void assignerAvion(Avion avion)
+}
+
+class VolSimple {
+   - String numeroVol
+   - String origine
+   - String destination
+   - LocalDateTime heureDepart
+   - LocalDateTime heureArrivee
+   - StatutVol statut
+   - TypeVol type
+   - Avion avionAssigne
+
+   + VolSimple(String numeroVol, String origine, String destination, ...)
+   + double getDureeTotale()
+   + List<String> getEscales()
+   + void changerStatut(StatutVol nouveauStatut)
+   + boolean estComposite()
+   + Avion getAvionAssigne()
+   + void assignerAvion(Avion avion)
+}
+
+class VolAvecEscale {
+   - String numeroVol
+   - List<VolComponent> segments
+   - TypeVol type
+
+   + VolAvecEscale(String numeroVol, TypeVol type)
+   + void ajouterSegment(VolComponent segment)
+   + void retirerSegment(VolComponent segment)
+   + double getDureeTotale()
+   + List<String> getEscales()
+   + String getOrigine()
+   + String getDestination()
+   + LocalDateTime getHeureDepart()
+   + LocalDateTime getHeureArrivee()
+   + StatutVol getStatut()
+   + void changerStatut(StatutVol nouveauStatut)
+   + boolean estComposite()
+   + Avion getAvionAssigne()
+   + void assignerAvion(Avion avion)
+}
+
+note right of VolAvecEscale
+  Composite : agrège plusieurs segments
+  - getStatut() retourne le statut du premier segment
+  - changerStatut() propage à TOUS les segments
+  - getDureeTotale() somme les durées
+  - getEscales() collecte toutes les escales
+end note
+
+VolComponent <|.. VolSimple
+VolComponent <|.. VolAvecEscale
+VolAvecEscale "1" o-- "1..*" VolComponent
+VolSimple "0..1" --> "0..1" Avion : assigné à
+
+
+
+interface VolService <<interface>> {
+   + Vol creerVol(VolDTO dto)
+   + Vol lireVol(Long id)
+   + Vol modifierVol(Long id, VolDTO dto)
+   + void supprimerVol(Long id)
+   + Vol changerStatut(Long id, StatutVol nouveauStatut)
+   + StatutVol obtenirStatutActuel(Long id)
+   + List<Vol> listerVolsParStatut(StatutVol statut)
+   + Vol assignerAvion(Long volId, Long avionId)
+   + Avion obtenirAvionAssigne(Long volId)
+   + List<ChangementStatut> obtenirHistorique(Long volId)
+}
+
+class VolServiceImpl {
+   - VolRepository volRepository
+   - AvionRepository avionRepository
+
+   + Vol creerVol(VolDTO dto)
+   + Vol lireVol(Long id)
+   + Vol modifierVol(Long id, VolDTO dto)
+   + void supprimerVol(Long id)
+   + Vol changerStatut(Long id, StatutVol nouveauStatut)
+   + StatutVol obtenirStatutActuel(Long id)
+   + List<Vol> listerVolsParStatut(StatutVol statut)
+   + Vol assignerAvion(Long volId, Long avionId)
+   + Avion obtenirAvionAssigne(Long volId)
+   + List<ChangementStatut> obtenirHistorique(Long volId)
+}
+
+note bottom of VolServiceImpl
+  Implémentation de base :
+  - CRUD classique
+  - obtenirHistorique() retourne Collections.emptyList()
+end note
+
+abstract class VolServiceDecorator {
+   # VolService volService
+
+   + VolServiceDecorator(VolService volService)
+   + Vol creerVol(VolDTO dto)
+   + Vol lireVol(Long id)
+   + Vol modifierVol(Long id, VolDTO dto)
+   + void supprimerVol(Long id)
+   + Vol changerStatut(Long id, StatutVol nouveauStatut)
+   + StatutVol obtenirStatutActuel(Long id)
+   + List<Vol> listerVolsParStatut(StatutVol statut)
+   + Vol assignerAvion(Long volId, Long avionId)
+   + Avion obtenirAvionAssigne(Long volId)
+   + List<ChangementStatut> obtenirHistorique(Long volId)
+}
+
+class VolServiceAvecHistorique {
+   - Map<Long, List<ChangementStatut>> historiques
+
+   + VolServiceAvecHistorique(VolService volService)
+   + Vol changerStatut(Long id, StatutVol nouveauStatut)
+   + List<ChangementStatut> obtenirHistorique(Long volId)
+   - void enregistrerChangement(Long id, StatutVol ancien, StatutVol nouveau)
+}
+
+note top of VolServiceAvecHistorique
+  DÉCORATEUR :
+  1. Intercepte changerStatut()
+  2. Enregistre l’historique avant le changement
+  3. Délègue au service décoré
+end note
+
+VolService <|.. VolServiceImpl
+VolService <|.. VolServiceDecorator
+VolServiceDecorator <|-- VolServiceAvecHistorique
+VolServiceAvecHistorique --> VolServiceImpl : décore
+
+class Vol <<entity>> {
+   - Long id
+   - String numeroVol
+   - String origine
+   - String destination
+   - LocalDateTime heureDepart
+   - LocalDateTime heureArrivee
+   - StatutVol statut
+   - TypeVol type
+   - Long avionId
+}
+
+note left of Vol
+  Entité JPA persistée en base
+  Utilisée par VolServiceImpl
+end note
+
+VolServiceImpl --> Vol
+VolServiceImpl --> Avion
+
+
+
+
+
+@enduml

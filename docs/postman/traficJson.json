@@ -1,0 +1,742 @@
+{
+  "info": {
+    "name": "Aeroport - Trafic Dashboard Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    },
+    {
+      "key": "codeIATA",
+      "value": "LYS"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup - Données de test",
+      "item": [
+        {
+          "name": "Créer Aéroport LYS (Local)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Aéroport créé', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.codeIATA).to.equal('LYS');",
+                  "    pm.expect(json.estLocal).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/aeroports",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"LYS\",\n  \"nom\": \"Lyon-Saint Exupéry\",\n  \"ville\": \"Lyon\",\n  \"pays\": \"France\",\n  \"estLocal\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Aéroport CDG (Partenaire)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/aeroports",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"CDG\",\n  \"nom\": \"Paris Charles de Gaulle\",\n  \"ville\": \"Paris\",\n  \"pays\": \"France\",\n  \"estLocal\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Aéroport MRS (Partenaire)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/aeroports",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"MRS\",\n  \"nom\": \"Marseille Provence\",\n  \"ville\": \"Marseille\",\n  \"pays\": \"France\",\n  \"estLocal\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Aéroport FRA (Partenaire)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/aeroports",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"FRA\",\n  \"nom\": \"Frankfurt Airport\",\n  \"ville\": \"Frankfurt\",\n  \"pays\": \"Allemagne\",\n  \"estLocal\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Piste 09L",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/pistes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"09L\",\n  \"longueur\": 4000.0,\n  \"largeur\": 45.0,\n  \"orientation\": \"EST\",\n  \"capaciteMaximale\": 500000.0,\n  \"aeroportCodeIATA\": \"LYS\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Piste 27R",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/pistes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"27R\",\n  \"longueur\": 3500.0,\n  \"largeur\": 45.0,\n  \"orientation\": \"OUEST\",\n  \"capaciteMaximale\": 400000.0,\n  \"aeroportCodeIATA\": \"LYS\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Avion F-GKXA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/avions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-GKXA\",\n  \"capacitePassager\": 180,\n  \"largeur\": 35.8,\n  \"longueur\": 39.5,\n  \"hauteur\": 12.5,\n  \"volumeBagage\": 150.0,\n  \"capaciteCarburant\": 26000.0,\n  \"autonomie\": 5500.0,\n  \"vitesseCroisiere\": 840.0,\n  \"etatMaintenance\": \"OK\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Vol AF1234 (Départ LYS → CDG)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF1234\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Lyon\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-01-15T10:00:00\",\n  \"heureArrivee\": \"2025-01-15T11:15:00\",\n  \"aeroportDepartCodeIATA\": \"LYS\",\n  \"aeroportArriveeCodeIATA\": \"CDG\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Vol AF5678 (MRS → Arrivée LYS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF5678\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Marseille\",\n  \"destination\": \"Lyon\",\n  \"heureDepart\": \"2025-01-15T09:00:00\",\n  \"heureArrivee\": \"2025-01-15T10:00:00\",\n  \"aeroportDepartCodeIATA\": \"MRS\",\n  \"aeroportArriveeCodeIATA\": \"LYS\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Vol LH999 (Départ LYS → FRA)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"LH999\",\n  \"type\": \"INTERNATIONAL\",\n  \"origine\": \"Lyon\",\n  \"destination\": \"Frankfurt\",\n  \"heureDepart\": \"2025-01-15T14:00:00\",\n  \"heureArrivee\": \"2025-01-15T15:30:00\",\n  \"aeroportDepartCodeIATA\": \"LYS\",\n  \"aeroportArriveeCodeIATA\": \"FRA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Assigner Avion à AF1234",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Avion assigné', () => {",
+                  "    pm.expect(pm.response.json().avionImmatriculation).to.equal('F-GKXA');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols/AF1234/avion",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-GKXA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Assigner Piste Départ à AF1234",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Piste assignée', () => {",
+                  "    pm.expect(pm.response.json().pisteDepartIdentifiant).to.equal('09L');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols/AF1234/piste-depart",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiantPiste\": \"09L\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Vue Consolidée",
+      "item": [
+        {
+          "name": "GET Vue consolidée LYS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Structure correcte', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('aeroportCodeIATA', 'LYS');",
+                  "    pm.expect(json).to.have.property('timestamp');",
+                  "    pm.expect(json).to.have.property('statistiques');",
+                  "    pm.expect(json).to.have.property('volsDepart');",
+                  "    pm.expect(json).to.have.property('volsArrivee');",
+                  "    pm.expect(json).to.have.property('pistes');",
+                  "});",
+                  "",
+                  "pm.test('Statistiques présentes', () => {",
+                  "    const stats = pm.response.json().statistiques;",
+                  "    pm.expect(stats).to.have.property('totalVolsDepart');",
+                  "    pm.expect(stats).to.have.property('totalVolsArrivee');",
+                  "    pm.expect(stats).to.have.property('volsEnCours');",
+                  "    pm.expect(stats).to.have.property('pistesDisponibles');",
+                  "});",
+                  "",
+                  "pm.test('Vols départ >= 2', () => {",
+                  "    pm.expect(pm.response.json().volsDepart.length).to.be.at.least(2);",
+                  "});",
+                  "",
+                  "pm.test('Vols arrivée >= 1', () => {",
+                  "    pm.expect(pm.response.json().volsArrivee.length).to.be.at.least(1);",
+                  "});",
+                  "",
+                  "pm.test('Pistes >= 2', () => {",
+                  "    pm.expect(pm.response.json().pistes.length).to.be.at.least(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic"
+          }
+        },
+        {
+          "name": "GET Vue consolidée - Aéroport sans trafic",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 avec listes vides', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.volsDepart).to.be.an('array');",
+                  "    pm.expect(json.volsArrivee).to.be.an('array');",
+                  "    pm.expect(json.statistiques.totalVolsDepart).to.equal(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/FRA/trafic"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Vols au Départ",
+      "item": [
+        {
+          "name": "GET Tous les vols au départ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Liste non vide', () => {",
+                  "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Structure VolTraficResponse', () => {",
+                  "    const vol = pm.response.json()[0];",
+                  "    pm.expect(vol).to.have.property('numeroVol');",
+                  "    pm.expect(vol).to.have.property('origine');",
+                  "    pm.expect(vol).to.have.property('destination');",
+                  "    pm.expect(vol).to.have.property('heureDepart');",
+                  "    pm.expect(vol).to.have.property('heureArrivee');",
+                  "    pm.expect(vol).to.have.property('statut');",
+                  "});",
+                  "",
+                  "pm.test('Contient AF1234 avec piste', () => {",
+                  "    const vols = pm.response.json();",
+                  "    const af1234 = vols.find(v => v.numeroVol === 'AF1234');",
+                  "    pm.expect(af1234).to.not.be.undefined;",
+                  "    pm.expect(af1234.pisteAssignee).to.equal('09L');",
+                  "    pm.expect(af1234.avionImmatriculation).to.equal('F-GKXA');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/departs"
+          }
+        },
+        {
+          "name": "GET Vols au départ - Filtré par statut PROGRAMME",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Tous les vols sont PROGRAMME', () => {",
+                  "    const vols = pm.response.json();",
+                  "    vols.forEach(vol => {",
+                  "        pm.expect(vol.statut).to.equal('PROGRAMME');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/departs?statut=PROGRAMME"
+          }
+        },
+        {
+          "name": "GET Vols au départ - Statut EN_VOL (vide)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Liste vide', () => {",
+                  "    pm.expect(pm.response.json()).to.be.an('array').that.is.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/departs?statut=EN_VOL"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Vols à l'Arrivée",
+      "item": [
+        {
+          "name": "GET Tous les vols à l'arrivée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Contient AF5678', () => {",
+                  "    const vols = pm.response.json();",
+                  "    const af5678 = vols.find(v => v.numeroVol === 'AF5678');",
+                  "    pm.expect(af5678).to.not.be.undefined;",
+                  "    pm.expect(af5678.destination).to.equal('Lyon');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/arrivees"
+          }
+        },
+        {
+          "name": "GET Vols à l'arrivée - Filtré par statut PROGRAMME",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Tous les vols sont PROGRAMME', () => {",
+                  "    const vols = pm.response.json();",
+                  "    vols.forEach(vol => {",
+                  "        pm.expect(vol.statut).to.equal('PROGRAMME');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/arrivees?statut=PROGRAMME"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Planning Pistes",
+      "item": [
+        {
+          "name": "GET Planning toutes les pistes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Liste non vide', () => {",
+                  "    pm.expect(pm.response.json()).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Structure PlanningPisteResponse', () => {",
+                  "    const piste = pm.response.json()[0];",
+                  "    pm.expect(piste).to.have.property('identifiant');",
+                  "    pm.expect(piste).to.have.property('etat');",
+                  "    pm.expect(piste).to.have.property('operationEnCours');",
+                  "    pm.expect(piste).to.have.property('prochainesOperations');",
+                  "    pm.expect(piste).to.have.property('historiqueRecent');",
+                  "});",
+                  "",
+                  "pm.test('Piste 09L présente', () => {",
+                  "    const pistes = pm.response.json();",
+                  "    const piste09L = pistes.find(p => p.identifiant === '09L');",
+                  "    pm.expect(piste09L).to.not.be.undefined;",
+                  "    pm.expect(piste09L.etat).to.equal('LIBRE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/pistes"
+          }
+        },
+        {
+          "name": "GET Planning piste spécifique 09L",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Bonne piste retournée', () => {",
+                  "    pm.expect(pm.response.json().identifiant).to.equal('09L');",
+                  "});",
+                  "",
+                  "pm.test('État LIBRE', () => {",
+                  "    pm.expect(pm.response.json().etat).to.equal('LIBRE');",
+                  "});",
+                  "",
+                  "pm.test('Vol AF1234 dans prochaines opérations', () => {",
+                  "    const ops = pm.response.json().prochainesOperations;",
+                  "    const af1234Op = ops.find(o => o.numeroVol === 'AF1234');",
+                  "    pm.expect(af1234Op).to.not.be.undefined;",
+                  "    pm.expect(af1234Op.typeOperation).to.equal('DECOLLAGE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/pistes/09L"
+          }
+        },
+        {
+          "name": "GET Planning piste inexistante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 ou 404', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic/pistes/INEXISTANTE"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Scénarios Avancés",
+      "item": [
+        {
+          "name": "Changer statut AF1234 → ENREGISTREMENT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut mis à jour', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('ENREGISTREMENT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/vols/AF1234/statut?statut=ENREGISTREMENT"
+          }
+        },
+        {
+          "name": "Vérifier statistiques après changement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Vol AF1234 en ENREGISTREMENT', () => {",
+                  "    const vols = pm.response.json().volsDepart;",
+                  "    const af1234 = vols.find(v => v.numeroVol === 'AF1234');",
+                  "    pm.expect(af1234.statut).to.equal('ENREGISTREMENT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic"
+          }
+        },
+        {
+          "name": "Retarder vol LH999",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Vol retardé', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('RETARDE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/vols/LH999/statut?statut=RETARDE"
+          }
+        },
+        {
+          "name": "Vérifier compteur vols retardés",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test('Au moins 1 vol retardé', () => {",
+                  "    pm.expect(pm.response.json().statistiques.volsRetardes).to.be.at.least(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/aeroports/{{codeIATA}}/trafic"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Cleanup",
+      "item": [
+        {
+          "name": "Supprimer Vol AF1234",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/AF1234"
+          }
+        },
+        {
+          "name": "Supprimer Vol AF5678",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/AF5678"
+          }
+        },
+        {
+          "name": "Supprimer Vol LH999",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/LH999"
+          }
+        },
+        {
+          "name": "Supprimer Piste 09L",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/pistes/09L"
+          }
+        },
+        {
+          "name": "Supprimer Piste 27R",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/pistes/27R"
+          }
+        },
+        {
+          "name": "Supprimer Avion F-GKXA",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/avions/F-GKXA"
+          }
+        },
+        {
+          "name": "Supprimer Aéroport LYS",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/aeroports/LYS"
+          }
+        },
+        {
+          "name": "Supprimer Aéroport CDG",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/aeroports/CDG"
+          }
+        },
+        {
+          "name": "Supprimer Aéroport MRS",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/aeroports/MRS"
+          }
+        },
+        {
+          "name": "Supprimer Aéroport FRA",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/aeroports/FRA"
+          }
+        }
+      ]
+    }
+  ]
+}

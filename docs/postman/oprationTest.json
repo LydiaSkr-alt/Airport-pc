@@ -1,0 +1,841 @@
+{
+  "info": {
+    "name": "Aeroport - Operations Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup - Données de test",
+      "item": [
+        {
+          "name": "Créer Aéroport LYS (Local)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/aeroports",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"LYS\",\n  \"nom\": \"Lyon-Saint Exupéry\",\n  \"ville\": \"Lyon\",\n  \"pays\": \"France\",\n  \"estLocal\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Aéroport CDG",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/aeroports",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codeIATA\": \"CDG\",\n  \"nom\": \"Paris Charles de Gaulle\",\n  \"ville\": \"Paris\",\n  \"pays\": \"France\",\n  \"estLocal\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Piste 09L (LYS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/pistes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"09L\",\n  \"longueur\": 4000.0,\n  \"largeur\": 45.0,\n  \"orientation\": \"EST\",\n  \"capaciteMaximale\": 500000.0,\n  \"aeroportCodeIATA\": \"LYS\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Piste 27R (LYS)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/pistes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"identifiant\": \"27R\",\n  \"longueur\": 3500.0,\n  \"largeur\": 45.0,\n  \"orientation\": \"OUEST\",\n  \"capaciteMaximale\": 400000.0,\n  \"aeroportCodeIATA\": \"LYS\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Avion F-GKXA",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/avions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-GKXA\",\n  \"capacitePassager\": 180,\n  \"largeur\": 35.8,\n  \"longueur\": 39.5,\n  \"hauteur\": 12.5,\n  \"volumeBagage\": 150.0,\n  \"capaciteCarburant\": 26000.0,\n  \"autonomie\": 5500.0,\n  \"vitesseCroisiere\": 840.0,\n  \"etatMaintenance\": \"OK\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Avion F-HBNK",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/avions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"immatriculation\": \"F-HBNK\",\n  \"capacitePassager\": 220,\n  \"largeur\": 38.0,\n  \"longueur\": 44.5,\n  \"hauteur\": 13.0,\n  \"volumeBagage\": 180.0,\n  \"capaciteCarburant\": 30000.0,\n  \"autonomie\": 6000.0,\n  \"vitesseCroisiere\": 870.0,\n  \"etatMaintenance\": \"OK\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Vol AF100 (Départ LYS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Vol créé avec statut PROGRAMME', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('PROGRAMME');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF100\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Lyon\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-01-15T10:00:00\",\n  \"heureArrivee\": \"2025-01-15T11:15:00\",\n  \"aeroportDepartCodeIATA\": \"LYS\",\n  \"aeroportArriveeCodeIATA\": \"CDG\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Vol AF200 (Pour retard)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF200\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Lyon\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-01-15T14:00:00\",\n  \"heureArrivee\": \"2025-01-15T15:15:00\",\n  \"aeroportDepartCodeIATA\": \"LYS\",\n  \"aeroportArriveeCodeIATA\": \"CDG\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer Vol AF300 (Pour annulation)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF300\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Lyon\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-01-15T16:00:00\",\n  \"heureArrivee\": \"2025-01-15T17:15:00\",\n  \"aeroportDepartCodeIATA\": \"LYS\",\n  \"aeroportArriveeCodeIATA\": \"CDG\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Flux Décollage Complet",
+      "item": [
+        {
+          "name": "1.1 Préparer Vol (avion + piste)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Avion assigné', () => {",
+                  "    pm.expect(pm.response.json().avionImmatriculation).to.equal('F-GKXA');",
+                  "});",
+                  "pm.test('Piste départ assignée', () => {",
+                  "    pm.expect(pm.response.json().pisteDepartIdentifiant).to.equal('09L');",
+                  "});",
+                  "pm.test('Statut toujours PROGRAMME', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('PROGRAMME');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/preparer?immatriculationAvion=F-GKXA&identifiantPiste=09L"
+          }
+        },
+        {
+          "name": "1.2 Démarrer Enregistrement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut ENREGISTREMENT', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('ENREGISTREMENT');",
+                  "});",
+                  "pm.test('Transitions possibles contient EMBARQUEMENT', () => {",
+                  "    pm.expect(pm.response.json().transitionsPossibles).to.include('EMBARQUEMENT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/enregistrement"
+          }
+        },
+        {
+          "name": "1.3 Démarrer Embarquement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut EMBARQUEMENT', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('EMBARQUEMENT');",
+                  "});",
+                  "pm.test('Transitions possibles contient PRET_DECOLLAGE', () => {",
+                  "    pm.expect(pm.response.json().transitionsPossibles).to.include('PRET_DECOLLAGE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/embarquement"
+          }
+        },
+        {
+          "name": "1.4 Autoriser Décollage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut PRET_DECOLLAGE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('PRET_DECOLLAGE');",
+                  "});",
+                  "pm.test('Transitions possibles contient DECOLLE', () => {",
+                  "    pm.expect(pm.response.json().transitionsPossibles).to.include('DECOLLE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/autoriser-decollage"
+          }
+        },
+        {
+          "name": "1.4b Vérifier Piste Occupée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Piste OCCUPEE', () => {",
+                  "    pm.expect(pm.response.json().etat).to.equal('OCCUPEE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pistes/09L"
+          }
+        },
+        {
+          "name": "1.5 Confirmer Décollage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut DECOLLE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('DECOLLE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/decollage"
+          }
+        },
+        {
+          "name": "1.5b Vérifier Piste Libérée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Piste LIBRE après décollage', () => {",
+                  "    pm.expect(pm.response.json().etat).to.equal('LIBRE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pistes/09L"
+          }
+        },
+        {
+          "name": "1.6 Passer EN_VOL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut EN_VOL', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('EN_VOL');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/vols/AF100/statut?statut=EN_VOL"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Flux Atterrissage Complet",
+      "item": [
+        {
+          "name": "2.1 Préparer Atterrissage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut EN_APPROCHE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('EN_APPROCHE');",
+                  "});",
+                  "pm.test('Piste arrivée assignée', () => {",
+                  "    pm.expect(pm.response.json().pisteArriveeIdentifiant).to.equal('27R');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/preparer-atterrissage?identifiantPiste=27R"
+          }
+        },
+        {
+          "name": "2.2 Autoriser Atterrissage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut toujours EN_APPROCHE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('EN_APPROCHE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/autoriser-atterrissage"
+          }
+        },
+        {
+          "name": "2.2b Vérifier Piste Arrivée Occupée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Piste OCCUPEE', () => {",
+                  "    pm.expect(pm.response.json().etat).to.equal('OCCUPEE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pistes/27R"
+          }
+        },
+        {
+          "name": "2.3 Confirmer Atterrissage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut ATTERRI', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('ATTERRI');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/atterrissage"
+          }
+        },
+        {
+          "name": "2.4 Libérer Piste Arrivée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut toujours ATTERRI', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('ATTERRI');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/liberer-piste"
+          }
+        },
+        {
+          "name": "2.4b Vérifier Piste Libérée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Piste LIBRE', () => {",
+                  "    pm.expect(pm.response.json().etat).to.equal('LIBRE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pistes/27R"
+          }
+        },
+        {
+          "name": "2.5 Terminer Vol",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut ARRIVE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('ARRIVE');",
+                  "});",
+                  "pm.test('Transitions vides (état terminal)', () => {",
+                  "    pm.expect(pm.response.json().transitionsPossibles).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/terminer"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Opérations Exceptionnelles",
+      "item": [
+        {
+          "name": "3.1 Préparer Vol AF200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF200/preparer?immatriculationAvion=F-HBNK&identifiantPiste=09L"
+          }
+        },
+        {
+          "name": "3.2 Retarder Vol AF200",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut RETARDE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('RETARDE');",
+                  "});",
+                  "pm.test('Peut revenir à PROGRAMME', () => {",
+                  "    pm.expect(pm.response.json().transitionsPossibles).to.include('PROGRAMME');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF200/retarder"
+          }
+        },
+        {
+          "name": "3.3 Préparer Vol AF300",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF300/preparer?immatriculationAvion=F-HBNK&identifiantPiste=27R"
+          }
+        },
+        {
+          "name": "3.4 Annuler Vol AF300",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut ANNULE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('ANNULE');",
+                  "});",
+                  "pm.test('Transitions vides (état terminal)', () => {",
+                  "    pm.expect(pm.response.json().transitionsPossibles).to.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF300/annuler"
+          }
+        },
+        {
+          "name": "3.4b Vérifier Piste Libérée après annulation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Piste LIBRE après annulation', () => {",
+                  "    pm.expect(pm.response.json().etat).to.equal('LIBRE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pistes/27R"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Cas d'Erreur",
+      "item": [
+        {
+          "name": "4.1 Préparer vol déjà terminé (erreur)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 ou 500', () => {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF100/preparer?immatriculationAvion=F-GKXA&identifiantPiste=09L"
+          }
+        },
+        {
+          "name": "4.2 Vol inexistant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => {",
+                  "    pm.expect(pm.response.code).to.equal(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/INEXISTANT/enregistrement"
+          }
+        },
+        {
+          "name": "4.3 Avion inexistant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => {",
+                  "    pm.expect(pm.response.code).to.equal(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF200/preparer?immatriculationAvion=INEXISTANT&identifiantPiste=09L"
+          }
+        },
+        {
+          "name": "4.4 Piste inexistante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => {",
+                  "    pm.expect(pm.response.code).to.equal(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF200/preparer?immatriculationAvion=F-HBNK&identifiantPiste=INEXISTANTE"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Détournement (vol en cours)",
+      "item": [
+        {
+          "name": "5.1 Créer Vol AF400 pour détournement",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{baseUrl}}/vols",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroVol\": \"AF400\",\n  \"type\": \"NATIONAL\",\n  \"origine\": \"Lyon\",\n  \"destination\": \"Paris\",\n  \"heureDepart\": \"2025-01-15T18:00:00\",\n  \"heureArrivee\": \"2025-01-15T19:15:00\",\n  \"aeroportDepartCodeIATA\": \"LYS\",\n  \"aeroportArriveeCodeIATA\": \"CDG\"\n}"
+            }
+          }
+        },
+        {
+          "name": "5.2 Préparer Vol AF400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF400/preparer?immatriculationAvion=F-GKXA&identifiantPiste=09L"
+          }
+        },
+        {
+          "name": "5.3 Enregistrement AF400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF400/enregistrement"
+          }
+        },
+        {
+          "name": "5.4 Embarquement AF400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF400/embarquement"
+          }
+        },
+        {
+          "name": "5.5 Autoriser Décollage AF400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF400/autoriser-decollage"
+          }
+        },
+        {
+          "name": "5.6 Confirmer Décollage AF400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF400/decollage"
+          }
+        },
+        {
+          "name": "5.7 Passer EN_VOL AF400",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/vols/AF400/statut?statut=EN_VOL"
+          }
+        },
+        {
+          "name": "5.8 Détourner Vol AF400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Statut DETOURNE', () => {",
+                  "    pm.expect(pm.response.json().statut).to.equal('DETOURNE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/operations/AF400/detourner"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Cleanup",
+      "item": [
+        {
+          "name": "Supprimer Vol AF100",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/AF100"
+          }
+        },
+        {
+          "name": "Supprimer Vol AF200",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/AF200"
+          }
+        },
+        {
+          "name": "Supprimer Vol AF300",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/AF300"
+          }
+        },
+        {
+          "name": "Supprimer Vol AF400",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/vols/AF400"
+          }
+        },
+        {
+          "name": "Supprimer Piste 09L",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/pistes/09L"
+          }
+        },
+        {
+          "name": "Supprimer Piste 27R",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/pistes/27R"
+          }
+        },
+        {
+          "name": "Supprimer Avion F-GKXA",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/avions/F-GKXA"
+          }
+        },
+        {
+          "name": "Supprimer Avion F-HBNK",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/avions/F-HBNK"
+          }
+        },
+        {
+          "name": "Supprimer Aéroport LYS",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/aeroports/LYS"
+          }
+        },
+        {
+          "name": "Supprimer Aéroport CDG",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/aeroports/CDG"
+          }
+        }
+      ]
+    }
+  ]
+}
